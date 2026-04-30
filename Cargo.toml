@@ -1,0 +1,27 @@
+[workspace]
+members = ["crates/gn-core", "crates/gn-render", "crates/gn-scripting", "crates/gn-editor"]
+resolver = "2"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+authors = ["G-N Studios"]
+license = "MIT"
+
+[package]
+name = "gn-engine"
+version.workspace = true
+edition.workspace = true
+description = "The Grit and Nails Engine - A 3D game engine written in Rust"
+
+[lib]
+path = "src/lib.rs"
+
+[dependencies]
+gn-core = { path = "crates/gn-core" }
+gn-render = { path = "crates/gn-render" }
+gn-scripting = { path = "crates/gn-scripting" }
+gn-editor = { path = "crates/gn-editor" }
+
+
+

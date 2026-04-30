@@ -1,0 +1,15 @@
+[package]
+name = "gn-core"
+version.workspace = true
+edition.workspace = true
+description = "G&N Engine core - ECS, math, and asset management"
+
+[dependencies]
+nalgebra = "0.33"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+uuid = { version = "1.0", features = ["v4", "serde"] }
+log = "0.4"
+parking_lot = "0.12"
+
+[dev-dependencies]

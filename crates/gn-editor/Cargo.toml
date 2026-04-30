@@ -1,0 +1,15 @@
+[package]
+name = "gn-editor"
+version.workspace = true
+edition.workspace = true
+description = "G&N Engine editor - Iced-based GUI"
+
+[dependencies]
+iced = "0.12"
+gn-core = { path = "../gn-core" }
+gn-render = { path = "../gn-render" }
+gn-scripting = { path = "../gn-scripting" }
+log = "0.4"
+env_logger = "0.11"
+
+[dev-dependencies]

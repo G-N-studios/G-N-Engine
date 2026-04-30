@@ -1,0 +1,16 @@
+[package]
+name = "gn-render"
+version.workspace = true
+edition.workspace = true
+description = "G&N Engine rendering - wgpu graphics abstraction"
+
+[dependencies]
+wgpu = "0.19"
+winit = "0.29"
+nalgebra = "0.33"
+serde = { version = "1.0", features = ["derive"] }
+log = "0.4"
+bytemuck = { version = "1.14", features = ["derive"] }
+gn-core = { path = "../gn-core" }
+
+[dev-dependencies]
