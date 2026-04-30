@@ -4,6 +4,10 @@ version.workspace = true
 edition.workspace = true
 description = "G&N Engine editor - Iced-based GUI"
 
+[[bin]]
+name = "gn-editor"
+path = "src/main.rs"
+
 [dependencies]
 iced = "0.12"
 gn-core = { path = "../gn-core" }
