@@ -158,6 +158,20 @@ impl World {
     pub fn get_entities(&self) -> Vec<Entity> {
         self.entities.keys().copied().collect()
     }
+
+    /// Get all component TypeIds for a specific entity
+    pub fn get_entity_component_types(&self, entity: &Entity) -> Vec<std::any::TypeId> {
+        self.storages
+            .iter()
+            .filter_map(|(type_id, storage)| {
+                if storage.contains(entity) {
+                    Some(*type_id)
+                } else {
+                    None
+                }
+            })
+            .collect()
+    }
 }
 
 impl Default for World {

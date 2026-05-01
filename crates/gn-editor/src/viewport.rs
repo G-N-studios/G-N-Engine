@@ -2,10 +2,7 @@
 
 use iced::widget::{column, container, text};
 use iced::Element;
-use gn_core::ecs::World;
-use gn_core::math::Vec3;
-use gn_render::camera::Camera;
-use gn_render::lighting::{Light, LightingConfig};
+use crate::viewport_renderer::ViewportRenderer;
 
 #[derive(Debug, Clone, Copy)]
 pub enum Message {
@@ -13,9 +10,7 @@ pub enum Message {
 }
 
 pub struct Viewport {
-    world: World,
-    camera: Camera,
-    lighting: LightingConfig,
+    renderer: ViewportRenderer,
 }
 
 impl Default for Viewport {
@@ -26,28 +21,8 @@ impl Default for Viewport {
 
 impl Viewport {
     pub fn new() -> Self {
-        let mut world = World::new();
-        
-        // Create default camera
-        let camera = Camera::perspective(
-            Vec3::new(0.0, 5.0, 10.0),  // position
-            Vec3::new(0.0, 0.0, 0.0),   // target
-            45.0,                         // FOV
-            16.0 / 9.0                   // aspect ratio
-        );
-        
-        // Create default lighting
-        let mut lighting = LightingConfig::new();
-        lighting.add_light(Light::directional(
-            Vec3::new(-1.0, -1.0, -1.0).normalize(),
-            [1.0, 1.0, 1.0],
-            1.0
-        ));
-        
         Self {
-            world,
-            camera,
-            lighting,
+            renderer: ViewportRenderer::new(),
         }
     }
 
@@ -56,13 +31,13 @@ impl Viewport {
     }
 
     pub fn view(&self) -> Element<Message> {
-        // Placeholder: Actual 3D rendering will be integrated in future updates
+        let render_info = self.renderer.render();
+        
         container(
             column![
                 text("3D Viewport").size(18),
-                text("Rendering integration coming soon"),
-                text(format!("Camera: ({:.1}, {:.1}, {:.1})", 0.0, 5.0, 10.0)),
-                text(format!("Active lights: {}", self.lighting.light_count()))
+                text(render_info),
+                text("(wgpu rendering coming soon)"),
             ]
             .padding(20)
         )
@@ -70,27 +45,35 @@ impl Viewport {
         .into()
     }
 
-    pub fn get_world(&self) -> &World {
-        &self.world
+    pub fn get_world(&self) -> &gn_core::ecs::World {
+        self.renderer.world()
     }
 
-    pub fn get_world_mut(&mut self) -> &mut World {
-        &mut self.world
+    pub fn get_world_mut(&mut self) -> &mut gn_core::ecs::World {
+        self.renderer.world_mut()
     }
 
-    pub fn get_camera(&self) -> &Camera {
-        &self.camera
+    pub fn get_camera(&self) -> &gn_render::camera::Camera {
+        self.renderer.camera()
     }
 
-    pub fn get_camera_mut(&mut self) -> &mut Camera {
-        &mut self.camera
+    pub fn get_camera_mut(&mut self) -> &mut gn_render::camera::Camera {
+        self.renderer.camera_mut()
     }
 
-    pub fn get_lighting(&self) -> &LightingConfig {
-        &self.lighting
+    pub fn get_lighting(&self) -> &gn_render::lighting::LightingConfig {
+        self.renderer.lighting()
     }
 
-    pub fn get_lighting_mut(&mut self) -> &mut LightingConfig {
-        &mut self.lighting
+    pub fn get_lighting_mut(&mut self) -> &mut gn_render::lighting::LightingConfig {
+        self.renderer.lighting_mut()
+    }
+
+    pub fn renderer(&self) -> &ViewportRenderer {
+        &self.renderer
+    }
+
+    pub fn renderer_mut(&mut self) -> &mut ViewportRenderer {
+        &mut self.renderer
     }
 }

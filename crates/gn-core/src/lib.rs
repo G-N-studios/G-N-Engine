@@ -9,9 +9,13 @@
 pub mod ecs;
 pub mod math;
 pub mod asset;
+pub mod components;
+pub mod component_display;
 
 pub use ecs::{World, Entity, Component};
 pub use math::{Vec3, Mat4, Quat};
+pub use components::{Transform, MeshComponent, Name};
+pub use component_display::ComponentDisplay;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum EngineError {

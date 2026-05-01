@@ -6,7 +6,7 @@ use gn_editor::scene_tree::{self, SceneTree};
 use gn_editor::viewport::{self, Viewport};
 use gn_editor::properties::{self, PropertyPanel};
 use gn_editor::asset_browser::{self, AssetBrowser};
-use gn_core::ecs::Component;
+use gn_core::{Transform, MeshComponent, Name};
 use std::path::PathBuf;
 
 pub fn main() -> iced::Result {
@@ -164,7 +164,7 @@ impl Editor {
             container(
                 column![
                     text("Properties").size(16),
-                    self.properties.view().map(Message::Properties)
+                    self.properties.view(self.viewport.get_world()).map(Message::Properties)
                 ]
                 .padding(10)
             )
@@ -206,85 +206,37 @@ impl Editor {
     }
 
     fn load_rotating_cube_demo(&mut self) {
-        #[derive(Clone)]
-        struct Position {
-            x: f32,
-            y: f32,
-            z: f32,
-        }
-
-        impl Component for Position {
-            fn as_any(&self) -> &dyn std::any::Any {
-                self
-            }
-            fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
-                self
-            }
-        }
-
-        #[derive(Clone)]
-        struct Name(String);
-
-        impl Component for Name {
-            fn as_any(&self) -> &dyn std::any::Any {
-                self
-            }
-            fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
-                self
-            }
-        }
-
-        // Create rotating cube entity
+        use gn_core::math::Vec3;
+        
+        // Create rotating cube entity with Transform, MeshComponent, and Name
         let cube = self.viewport.get_world_mut().create_entity();
-        self.viewport.get_world_mut().attach_component(cube, Position { x: 0.0, y: 0.0, z: 0.0 });
-        self.viewport.get_world_mut().attach_component(cube, Name("RotatingCube".to_string()));
+        self.viewport.get_world_mut().attach_component(cube, Transform::with_position(Vec3::new(0.0, 0.0, 0.0)));
+        self.viewport.get_world_mut().attach_component(cube, MeshComponent::with_mesh("cube".to_string()));
+        self.viewport.get_world_mut().attach_component(cube, Name::new("RotatingCube".to_string()));
         
         self.scene_tree.add_entity(cube, "RotatingCube".to_string());
     }
 
     fn load_editor_demo(&mut self) {
-        #[derive(Clone)]
-        struct Position {
-            x: f32,
-            y: f32,
-            z: f32,
-        }
-
-        impl Component for Position {
-            fn as_any(&self) -> &dyn std::any::Any {
-                self
-            }
-            fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
-                self
-            }
-        }
-
-        #[derive(Clone)]
-        struct Name(String);
-
-        impl Component for Name {
-            fn as_any(&self) -> &dyn std::any::Any {
-                self
-            }
-            fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
-                self
-            }
-        }
-
-        // Create example entities
+        use gn_core::math::Vec3;
+        
+        // Create player entity with Transform, MeshComponent, and Name
         let player = self.viewport.get_world_mut().create_entity();
-        self.viewport.get_world_mut().attach_component(player, Position { x: 0.0, y: 1.0, z: 0.0 });
-        self.viewport.get_world_mut().attach_component(player, Name("Player".to_string()));
+        self.viewport.get_world_mut().attach_component(player, Transform::with_position(Vec3::new(0.0, 1.0, 0.0)));
+        self.viewport.get_world_mut().attach_component(player, MeshComponent::with_mesh("cube".to_string()));
+        self.viewport.get_world_mut().attach_component(player, Name::new("Player".to_string()));
         self.scene_tree.add_entity(player, "Player".to_string());
 
+        // Create light entity with Transform and Name
         let light = self.viewport.get_world_mut().create_entity();
-        self.viewport.get_world_mut().attach_component(light, Position { x: 5.0, y: 10.0, z: 5.0 });
-        self.viewport.get_world_mut().attach_component(light, Name("MainLight".to_string()));
+        self.viewport.get_world_mut().attach_component(light, Transform::with_position(Vec3::new(5.0, 10.0, 5.0)));
+        self.viewport.get_world_mut().attach_component(light, Name::new("MainLight".to_string()));
         self.scene_tree.add_entity(light, "MainLight".to_string());
 
+        // Create camera entity with Transform and Name
         let camera = self.viewport.get_world_mut().create_entity();
-        self.viewport.get_world_mut().attach_component(camera, Position { x: 0.0, y: 5.0, z: 10.0 });
-        self.viewport.get_world_mut().attach_component(camera, Name("MainCamera".to_string()));
+        self.viewport.get_world_mut().attach_component(camera, Transform::with_position(Vec3::new(0.0, 5.0, 10.0)));
+        self.viewport.get_world_mut().attach_component(camera, Name::new("MainCamera".to_string()));
         self.scene_tree.add_entity(camera, "MainCamera".to_string());
     }
 }

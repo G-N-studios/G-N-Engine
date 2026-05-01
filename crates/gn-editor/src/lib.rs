@@ -5,6 +5,7 @@
 pub mod launcher;
 pub mod scene_tree;
 pub mod viewport;
+pub mod viewport_renderer;
 pub mod properties;
 pub mod asset_browser;
 

@@ -1,6 +1,6 @@
 //! Project launcher - allows users to create, open, or demo projects
 
-use iced::widget::{button, column, container, text, Column};
+use iced::widget::{button, column, container, text};
 use iced::{Alignment, Element, Length};
 use std::path::PathBuf;
 
