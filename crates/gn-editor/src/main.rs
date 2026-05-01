@@ -109,7 +109,7 @@ impl Sandbox for Editor {
         }
     }
 
-    fn view(&self) -> Element<Message> {
+    fn view(&self) -> Element<'_, Message> {
         match self.mode {
             EditorMode::Launcher => {
                 self.launcher.view().map(Message::Launcher)
@@ -122,7 +122,7 @@ impl Sandbox for Editor {
 }
 
 impl Editor {
-    fn view_editor(&self) -> Element<Message> {
+    fn view_editor(&self) -> Element<'_, Message> {
         let header = container(
             row![
                 text("G&N Engine Editor - Phase 4").size(24),
