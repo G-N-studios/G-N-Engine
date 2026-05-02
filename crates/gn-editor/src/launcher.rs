@@ -1,8 +1,31 @@
 //! Project launcher - allows users to create, open, or demo projects
 
-use iced::widget::{button, column, container, text};
+use iced::widget::{button, column, container, pick_list, text};
 use iced::{Alignment, Element, Length};
 use std::path::PathBuf;
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum GraphicsBackend {
+    Vulkan,
+    OpenGL,
+    Auto,
+}
+
+impl GraphicsBackend {
+    pub fn label(&self) -> &str {
+        match self {
+            GraphicsBackend::Vulkan => "Vulkan (recommended)",
+            GraphicsBackend::OpenGL => "OpenGL (compatible)",
+            GraphicsBackend::Auto => "Auto (system default)",
+        }
+    }
+}
+
+impl std::fmt::Display for GraphicsBackend {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.label())
+    }
+}
 
 #[derive(Debug, Clone)]
 pub enum Message {
@@ -11,6 +34,7 @@ pub enum Message {
     RunDemo,
     ProjectSelected(PathBuf),
     DemoSelected(DemoType),
+    BackendSelected(GraphicsBackend),
     Back,
 }
 
@@ -45,12 +69,14 @@ pub enum LauncherState {
 
 pub struct Launcher {
     state: LauncherState,
+    selected_backend: GraphicsBackend,
 }
 
 impl Default for Launcher {
     fn default() -> Self {
         Self {
             state: LauncherState::MainMenu,
+            selected_backend: GraphicsBackend::Auto,
         }
     }
 }
@@ -80,6 +106,9 @@ impl Launcher {
             Message::DemoSelected(_) => {
                 // Demo will be started by parent
             }
+            Message::BackendSelected(backend) => {
+                self.selected_backend = backend;
+            }
         }
     }
 
@@ -89,6 +118,14 @@ impl Launcher {
             LauncherState::SelectingDemo => self.view_demo_selection(),
             LauncherState::SelectingFolder => self.view_folder_selection(),
         }
+    }
+
+    pub fn selected_backend(&self) -> GraphicsBackend {
+        self.selected_backend
+    }
+
+    pub fn set_selected_backend(&mut self, backend: GraphicsBackend) {
+        self.selected_backend = backend;
     }
 
     fn view_main_menu(&self) -> Element<Message> {
@@ -140,11 +177,31 @@ impl Launcher {
         .padding(40)
         .width(Length::Fixed(400.0));
 
+        let backend_options = vec![
+            GraphicsBackend::Vulkan,
+            GraphicsBackend::OpenGL,
+            GraphicsBackend::Auto,
+        ];
+
+        let backend_selector = column![
+            text("Graphics Backend").size(14),
+            pick_list(
+                backend_options,
+                Some(self.selected_backend),
+                Message::BackendSelected
+            )
+            .width(Length::Fill)
+        ]
+        .spacing(5)
+        .width(Length::Fixed(400.0));
+
         let content = column![
             title,
             subtitle,
             text(""),
-            buttons
+            buttons,
+            text(""),
+            backend_selector
         ]
         .spacing(20)
         .padding(40)

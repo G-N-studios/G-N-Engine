@@ -6,19 +6,41 @@ use wgpu::*;
 use winit::window::Window;
 use std::sync::Arc;
 
+/// Backend preference for graphics rendering
+#[derive(Debug, Clone, Copy)]
+pub enum BackendPreference {
+    Vulkan,
+    OpenGL,
+    Auto,
+}
+
+/// Information about available graphics backends on the system
+#[derive(Debug, Clone)]
+pub struct BackendAvailability {
+    pub vulkan_available: bool,
+    pub opengl_available: bool,
+}
+
 /// Main graphics context for rendering operations
 pub struct GraphicsContext {
     pub device: Device,
     pub queue: Queue,
     pub surface: Surface<'static>,
     pub config: SurfaceConfiguration,
+    backend_info: String,
 }
 
 impl GraphicsContext {
     /// Create a new graphics context for a window
-    pub async fn new(window: Arc<Window>) -> Result<Self, String> {
+    pub async fn new(window: Arc<Window>, backend: BackendPreference) -> Result<Self, String> {
+        let backends = match backend {
+            BackendPreference::Vulkan => Backends::VULKAN,
+            BackendPreference::OpenGL => Backends::GL,
+            BackendPreference::Auto => Backends::PRIMARY,
+        };
+
         let instance = Instance::new(InstanceDescriptor {
-            backends: Backends::PRIMARY,
+            backends,
             ..Default::default()
         });
 
@@ -33,6 +55,8 @@ impl GraphicsContext {
             })
             .await
             .ok_or_else(|| "Failed to request adapter".to_string())?;
+
+        let backend_info = format!("{:?}", adapter.get_info().backend);
 
         let (device, queue) = adapter
             .request_device(&DeviceDescriptor {
@@ -55,6 +79,7 @@ impl GraphicsContext {
             queue,
             surface,
             config,
+            backend_info,
         })
     }
 
@@ -75,6 +100,11 @@ impl GraphicsContext {
         self.device.create_command_encoder(&CommandEncoderDescriptor {
             label: Some("Render Pass"),
         })
+    }
+
+    /// Get information about the active backend
+    pub fn get_backend_info(&self) -> &str {
+        &self.backend_info
     }
 }
 
@@ -147,6 +177,45 @@ impl RenderPipeline {
         });
 
         RenderPipeline { pipeline }
+    }
+}
+
+/// Check if Vulkan backend is supported on this system
+async fn check_vulkan_support() -> bool {
+    let instance = Instance::new(InstanceDescriptor {
+        backends: Backends::VULKAN,
+        ..Default::default()
+    });
+
+    !instance.enumerate_adapters(Backends::VULKAN).is_empty()
+}
+
+/// Check if OpenGL backend is supported on this system
+async fn check_opengl_support() -> bool {
+    let instance = Instance::new(InstanceDescriptor {
+        backends: Backends::GL,
+        ..Default::default()
+    });
+
+    !instance.enumerate_adapters(Backends::GL).is_empty()
+}
+
+/// Query which backends are available on this system
+pub async fn detect_available_backends() -> BackendAvailability {
+    BackendAvailability {
+        vulkan_available: check_vulkan_support().await,
+        opengl_available: check_opengl_support().await,
+    }
+}
+
+/// Get the recommended backend based on availability
+pub fn get_recommended_backend(availability: &BackendAvailability) -> BackendPreference {
+    if availability.vulkan_available {
+        BackendPreference::Vulkan
+    } else if availability.opengl_available {
+        BackendPreference::OpenGL
+    } else {
+        BackendPreference::Auto
     }
 }
 

@@ -3,6 +3,7 @@
 use iced::widget::{column, container, text};
 use iced::Element;
 use crate::viewport_renderer::ViewportRenderer;
+use gn_render::graphics::BackendPreference;
 
 #[derive(Debug, Clone, Copy)]
 pub enum Message {
@@ -11,18 +12,20 @@ pub enum Message {
 
 pub struct Viewport {
     renderer: ViewportRenderer,
+    backend: BackendPreference,
 }
 
 impl Default for Viewport {
     fn default() -> Self {
-        Self::new()
+        Self::new(BackendPreference::Auto)
     }
 }
 
 impl Viewport {
-    pub fn new() -> Self {
+    pub fn new(backend: BackendPreference) -> Self {
         Self {
-            renderer: ViewportRenderer::new(),
+            renderer: ViewportRenderer::new(backend),
+            backend,
         }
     }
 
@@ -31,18 +34,34 @@ impl Viewport {
     }
 
     pub fn view(&self) -> Element<Message> {
-        let render_info = self.renderer.render();
+        let render_info = if self.renderer.is_rendering_initialized() {
+            "Rendering system initialized (texture display coming soon)".to_string()
+        } else {
+            format!(
+                "Viewport: {} entities, {} lights\nCamera: ({:.1}, {:.1}, {:.1})\n(Rendering system not yet initialized)",
+                self.renderer.world().get_entities().len(),
+                self.renderer.lighting().light_count(),
+                self.renderer.camera().position.x,
+                self.renderer.camera().position.y,
+                self.renderer.camera().position.z
+            )
+        };
+        let backend_text = format!("Backend: {:?}", self.backend);
         
         container(
             column![
                 text("3D Viewport").size(18),
+                text(&backend_text).size(14),
                 text(render_info),
-                text("(wgpu rendering coming soon)"),
             ]
             .padding(20)
         )
         .padding(5)
         .into()
+    }
+
+    pub fn get_backend(&self) -> BackendPreference {
+        self.backend
     }
 
     pub fn get_world(&self) -> &gn_core::ecs::World {

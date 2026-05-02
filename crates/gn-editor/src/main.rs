@@ -1,15 +1,56 @@
 use iced::widget::{column, container, row, text};
 use iced::{Element, Sandbox, Settings};
 
-use gn_editor::launcher::{self, DemoType, Launcher};
+use gn_editor::launcher::{self, DemoType, Launcher, GraphicsBackend};
 use gn_editor::scene_tree::{self, SceneTree};
 use gn_editor::viewport::{self, Viewport};
 use gn_editor::properties::{self, PropertyPanel};
 use gn_editor::asset_browser::{self, AssetBrowser};
 use gn_core::{Transform, MeshComponent, Name};
+use gn_render::graphics::BackendPreference;
 use std::path::PathBuf;
+use std::fs;
+use std::io;
+
+fn launch_demo_spinning_cube() {
+    let mut cmd = std::process::Command::new("cargo");
+    cmd.args(&["run", "--example", "spinning_cube", "--release"]);
+    
+    match cmd.spawn() {
+        Ok(mut child) => {
+            println!("🎮 Launching spinning cube demo...");
+            let _ = child.wait();
+        }
+        Err(e) => {
+            eprintln!("❌ Failed to launch spinning cube demo: {}", e);
+            eprintln!("Make sure you're running this from the G&N Engine repository root.");
+            std::process::exit(1);
+        }
+    }
+}
 
 pub fn main() -> iced::Result {
+    // Parse command line arguments for demo mode
+    let args: Vec<String> = std::env::args().collect();
+    
+    for arg in &args[1..] {
+        if arg.starts_with("--demo=") {
+            let demo_name = &arg[7..]; // Remove "--demo=" prefix
+            match demo_name {
+                "spinning_cube" => {
+                    // Launch the spinning cube example
+                    launch_demo_spinning_cube();
+                    return Ok(());
+                }
+                _ => {
+                    eprintln!("Unknown demo: {}", demo_name);
+                    eprintln!("Available demos: spinning_cube");
+                    std::process::exit(1);
+                }
+            }
+        }
+    }
+    
     Editor::run(Settings::default())
 }
 
@@ -22,6 +63,7 @@ enum EditorMode {
 struct Editor {
     mode: EditorMode,
     launcher: Launcher,
+    selected_backend: BackendPreference,
     scene_tree: SceneTree,
     viewport: Viewport,
     properties: PropertyPanel,
@@ -39,11 +81,15 @@ enum Message {
 
 impl Default for Editor {
     fn default() -> Self {
+        let loaded_backend = Editor::load_backend_preference();
+        let mut launcher = Launcher::new();
+        launcher.set_selected_backend(Self::convert_backend_inverse(loaded_backend));
         Self {
             mode: EditorMode::Launcher,
-            launcher: Launcher::new(),
+            launcher,
+            selected_backend: loaded_backend,
             scene_tree: SceneTree::new(),
-            viewport: Viewport::new(),
+            viewport: Viewport::new(loaded_backend),
             properties: PropertyPanel::new(),
             asset_browser: AssetBrowser::new(PathBuf::from("assets")),
         }
@@ -74,12 +120,22 @@ impl Sandbox for Editor {
                     }
                     launcher::Message::DemoSelected(demo_type) => {
                         self.launcher.update(launcher::Message::DemoSelected(demo_type));
+                        // Update selected backend from launcher
+                        let backend = self.launcher.selected_backend();
+                        self.selected_backend = Self::convert_backend(backend);
+                        // Reinitialize viewport with selected backend
+                        self.viewport = Viewport::new(self.selected_backend);
                         // Launch the selected demo
                         self.load_demo(demo_type);
                         self.mode = EditorMode::Editor;
                     }
                     launcher::Message::NewProject | launcher::Message::OpenProject => {
                         self.launcher.update(msg);
+                        // Update selected backend from launcher
+                        let backend = self.launcher.selected_backend();
+                        self.selected_backend = Self::convert_backend(backend);
+                        // Reinitialize viewport with selected backend
+                        self.viewport = Viewport::new(self.selected_backend);
                         // For now, just launch editor with default project
                         self.mode = EditorMode::Editor;
                     }
@@ -88,7 +144,19 @@ impl Sandbox for Editor {
                     }
                     launcher::Message::ProjectSelected(_) => {
                         self.launcher.update(msg);
+                        // Update selected backend from launcher
+                        let backend = self.launcher.selected_backend();
+                        self.selected_backend = Self::convert_backend(backend);
+                        // Reinitialize viewport with selected backend
+                        self.viewport = Viewport::new(self.selected_backend);
                         self.mode = EditorMode::Editor;
+                    }
+                    launcher::Message::BackendSelected(backend) => {
+                        self.launcher.update(launcher::Message::BackendSelected(backend));
+                        self.selected_backend = Self::convert_backend(backend);
+                        self.viewport = Viewport::new(self.selected_backend);
+                        // Save the backend preference to config
+                        let _ = Self::save_backend_preference(self.selected_backend);
                     }
                 }
             }
@@ -127,9 +195,10 @@ impl Editor {
             row![
                 text("G&N Engine Editor - Phase 4").size(24),
                 text(format!(
-                    "Entities: {} | Assets: {}",
+                    "Entities: {} | Assets: {} | Backend: {}",
                     self.scene_tree.entity_count(),
-                    self.asset_browser.asset_count()
+                    self.asset_browser.asset_count(),
+                    self.launcher.selected_backend()
                 ))
                 .size(14)
             ]
@@ -238,5 +307,80 @@ impl Editor {
         self.viewport.get_world_mut().attach_component(camera, Transform::with_position(Vec3::new(0.0, 5.0, 10.0)));
         self.viewport.get_world_mut().attach_component(camera, Name::new("MainCamera".to_string()));
         self.scene_tree.add_entity(camera, "MainCamera".to_string());
+    }
+
+    fn convert_backend(backend: GraphicsBackend) -> BackendPreference {
+        match backend {
+            GraphicsBackend::Vulkan => BackendPreference::Vulkan,
+            GraphicsBackend::OpenGL => BackendPreference::OpenGL,
+            GraphicsBackend::Auto => BackendPreference::Auto,
+        }
+    }
+
+    fn convert_backend_inverse(backend: BackendPreference) -> GraphicsBackend {
+        match backend {
+            BackendPreference::Vulkan => GraphicsBackend::Vulkan,
+            BackendPreference::OpenGL => GraphicsBackend::OpenGL,
+            BackendPreference::Auto => GraphicsBackend::Auto,
+        }
+    }
+
+    fn get_config_path() -> io::Result<PathBuf> {
+        #[cfg(target_os = "windows")]
+        {
+            let home = std::env::var("USERPROFILE")
+                .or_else(|_| std::env::var("HOME"))
+                .map_err(|_| {
+                    io::Error::new(io::ErrorKind::NotFound, "Could not determine home directory")
+                })?;
+            Ok(PathBuf::from(home).join(".gn-engine").join("config.json"))
+        }
+        #[cfg(not(target_os = "windows"))]
+        {
+            let home = std::env::var("HOME")
+                .map_err(|_| {
+                    io::Error::new(io::ErrorKind::NotFound, "Could not determine home directory")
+                })?;
+            Ok(PathBuf::from(home).join(".config/gn-engine/config.json"))
+        }
+    }
+
+    fn save_backend_preference(backend: BackendPreference) -> io::Result<()> {
+        let config_path = Self::get_config_path()?;
+        
+        if let Some(parent) = config_path.parent() {
+            fs::create_dir_all(parent)?;
+        }
+
+        let backend_str = match backend {
+            BackendPreference::Vulkan => "vulkan",
+            BackendPreference::OpenGL => "opengl",
+            BackendPreference::Auto => "auto",
+        };
+
+        let json = format!(r#"{{"backend": "{}"}}"#, backend_str);
+        fs::write(config_path, json)?;
+        Ok(())
+    }
+
+    fn load_backend_preference() -> BackendPreference {
+        let config_path = match Self::get_config_path() {
+            Ok(path) => path,
+            Err(_) => return BackendPreference::Auto,
+        };
+
+        let content = match fs::read_to_string(&config_path) {
+            Ok(c) => c,
+            Err(_) => return BackendPreference::Auto,
+        };
+
+        // Simple JSON parsing for backend value
+        if content.contains(r#""backend":"vulkan"#) || content.contains(r#""backend": "vulkan"#) {
+            BackendPreference::Vulkan
+        } else if content.contains(r#""backend":"opengl"#) || content.contains(r#""backend": "opengl"#) {
+            BackendPreference::OpenGL
+        } else {
+            BackendPreference::Auto
+        }
     }
 }

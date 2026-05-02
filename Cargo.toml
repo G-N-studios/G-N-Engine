@@ -29,6 +29,10 @@ gn-editor = { path = "crates/gn-editor" }
 iced = "0.12"
 log = "0.4"
 env_logger = "0.11"
+tokio = { version = "1.0", features = ["full"] }
+bytemuck = { version = "1.14", features = ["derive"] }
+winit = "0.29"
+wgpu = "0.19"
 
 
 
