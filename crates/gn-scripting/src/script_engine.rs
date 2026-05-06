@@ -1,10 +1,10 @@
 //! Lua script engine integration
-//! 
+//!
 //! Embeds Lua for entity scripting and behavior
 
 use mlua::{Lua, Value as LuaValue};
-use std::path::Path;
 use std::fs;
+use std::path::Path;
 
 /// Lua script engine for game logic
 pub struct ScriptEngine {
@@ -99,7 +99,7 @@ mod tests {
         let engine = ScriptEngine::new().unwrap();
         engine.load_script("test_var = 123").unwrap();
         let result = engine.get_global("test_var").unwrap();
-        
+
         match result {
             LuaValue::Integer(i) => assert_eq!(i, 123),
             _ => panic!("Expected integer"),
@@ -109,8 +109,10 @@ mod tests {
     #[test]
     fn test_call_function() {
         let engine = ScriptEngine::new().unwrap();
-        engine.load_script("function greet() return 'hello' end").unwrap();
-        
+        engine
+            .load_script("function greet() return 'hello' end")
+            .unwrap();
+
         // Call function
         let result = engine.call_function("greet");
         assert!(result.is_ok());
@@ -121,7 +123,7 @@ mod tests {
         let engine = ScriptEngine::new().unwrap();
         let result = engine.set_global_int("my_value", 99);
         assert!(result.is_ok());
-        
+
         let retrieved = engine.get_global("my_value").unwrap();
         match retrieved {
             LuaValue::Integer(i) => assert_eq!(i, 99),
@@ -134,13 +136,13 @@ mod tests {
         let engine = ScriptEngine::new().unwrap();
         let result = engine.set_global_string("greeting", "hello");
         assert!(result.is_ok());
-        
+
         let retrieved = engine.get_global("greeting").unwrap();
         match retrieved {
             LuaValue::String(s) => {
                 let s_str = s.to_str().unwrap();
                 assert_eq!(s_str, "hello");
-            },
+            }
             _ => panic!("Expected string"),
         }
     }

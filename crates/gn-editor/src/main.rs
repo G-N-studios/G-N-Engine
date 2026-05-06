@@ -1,21 +1,21 @@
 use iced::widget::{column, container, row, text};
 use iced::{Element, Sandbox, Settings};
 
-use gn_editor::launcher::{self, DemoType, Launcher, GraphicsBackend};
+use gn_core::{MeshComponent, Name, Transform};
+use gn_editor::asset_browser::{self, AssetBrowser};
+use gn_editor::launcher::{self, DemoType, GraphicsBackend, Launcher};
+use gn_editor::properties::{self, PropertyPanel};
 use gn_editor::scene_tree::{self, SceneTree};
 use gn_editor::viewport::{self, Viewport};
-use gn_editor::properties::{self, PropertyPanel};
-use gn_editor::asset_browser::{self, AssetBrowser};
-use gn_core::{Transform, MeshComponent, Name};
 use gn_render::graphics::BackendPreference;
-use std::path::PathBuf;
 use std::fs;
 use std::io;
+use std::path::PathBuf;
 
 fn launch_demo_spinning_cube() {
     let mut cmd = std::process::Command::new("cargo");
     cmd.args(&["run", "--example", "spinning_cube", "--release"]);
-    
+
     match cmd.spawn() {
         Ok(mut child) => {
             println!("🎮 Launching spinning cube demo...");
@@ -32,7 +32,7 @@ fn launch_demo_spinning_cube() {
 pub fn main() -> iced::Result {
     // Parse command line arguments for demo mode
     let args: Vec<String> = std::env::args().collect();
-    
+
     for arg in &args[1..] {
         if arg.starts_with("--demo=") {
             let demo_name = &arg[7..]; // Remove "--demo=" prefix
@@ -50,7 +50,7 @@ pub fn main() -> iced::Result {
             }
         }
     }
-    
+
     Editor::run(Settings::default())
 }
 
@@ -119,7 +119,8 @@ impl Sandbox for Editor {
                         self.launcher.update(msg);
                     }
                     launcher::Message::DemoSelected(demo_type) => {
-                        self.launcher.update(launcher::Message::DemoSelected(demo_type));
+                        self.launcher
+                            .update(launcher::Message::DemoSelected(demo_type));
                         // Update selected backend from launcher
                         let backend = self.launcher.selected_backend();
                         self.selected_backend = Self::convert_backend(backend);
@@ -152,7 +153,8 @@ impl Sandbox for Editor {
                         self.mode = EditorMode::Editor;
                     }
                     launcher::Message::BackendSelected(backend) => {
-                        self.launcher.update(launcher::Message::BackendSelected(backend));
+                        self.launcher
+                            .update(launcher::Message::BackendSelected(backend));
                         self.selected_backend = Self::convert_backend(backend);
                         self.viewport = Viewport::new(self.selected_backend);
                         // Save the backend preference to config
@@ -162,7 +164,8 @@ impl Sandbox for Editor {
             }
             Message::SceneTree(msg) => {
                 let scene_tree::Message::EntitySelected(entity) = msg;
-                self.scene_tree.update(scene_tree::Message::EntitySelected(entity));
+                self.scene_tree
+                    .update(scene_tree::Message::EntitySelected(entity));
                 self.properties.set_selected_entity(Some(entity));
             }
             Message::Viewport(msg) => {
@@ -179,12 +182,8 @@ impl Sandbox for Editor {
 
     fn view(&self) -> Element<'_, Message> {
         match self.mode {
-            EditorMode::Launcher => {
-                self.launcher.view().map(Message::Launcher)
-            }
-            EditorMode::Editor => {
-                self.view_editor()
-            }
+            EditorMode::Launcher => self.launcher.view().map(Message::Launcher),
+            EditorMode::Editor => self.view_editor(),
         }
     }
 }
@@ -202,7 +201,7 @@ impl Editor {
                 ))
                 .size(14)
             ]
-            .spacing(20)
+            .spacing(20),
         )
         .padding(10);
 
@@ -217,7 +216,6 @@ impl Editor {
             )
             .padding(5)
             .width(iced::Length::FillPortion(1)),
-            
             // Center: 3D Viewport
             container(
                 column![
@@ -228,12 +226,13 @@ impl Editor {
             )
             .padding(5)
             .width(iced::Length::FillPortion(2)),
-            
             // Right panel: Properties
             container(
                 column![
                     text("Properties").size(16),
-                    self.properties.view(self.viewport.get_world()).map(Message::Properties)
+                    self.properties
+                        .view(self.viewport.get_world())
+                        .map(Message::Properties)
                 ]
                 .padding(10)
             )
@@ -248,19 +247,13 @@ impl Editor {
                 text("Asset Browser").size(16),
                 self.asset_browser.view().map(Message::AssetBrowser)
             ]
-            .padding(10)
+            .padding(10),
         )
         .padding(5);
 
-        let content = column![
-            header,
-            top_panels,
-            bottom_panel
-        ];
+        let content = column![header, top_panels, bottom_panel];
 
-        container(content)
-            .padding(0)
-            .into()
+        container(content).padding(0).into()
     }
 
     fn load_demo(&mut self, demo_type: DemoType) {
@@ -276,36 +269,56 @@ impl Editor {
 
     fn load_rotating_cube_demo(&mut self) {
         use gn_core::math::Vec3;
-        
+
         // Create rotating cube entity with Transform, MeshComponent, and Name
         let cube = self.viewport.get_world_mut().create_entity();
-        self.viewport.get_world_mut().attach_component(cube, Transform::with_position(Vec3::new(0.0, 0.0, 0.0)));
-        self.viewport.get_world_mut().attach_component(cube, MeshComponent::with_mesh("cube".to_string()));
-        self.viewport.get_world_mut().attach_component(cube, Name::new("RotatingCube".to_string()));
-        
+        self.viewport
+            .get_world_mut()
+            .attach_component(cube, Transform::with_position(Vec3::new(0.0, 0.0, 0.0)));
+        self.viewport
+            .get_world_mut()
+            .attach_component(cube, MeshComponent::with_mesh("cube".to_string()));
+        self.viewport
+            .get_world_mut()
+            .attach_component(cube, Name::new("RotatingCube".to_string()));
+
         self.scene_tree.add_entity(cube, "RotatingCube".to_string());
     }
 
     fn load_editor_demo(&mut self) {
         use gn_core::math::Vec3;
-        
+
         // Create player entity with Transform, MeshComponent, and Name
         let player = self.viewport.get_world_mut().create_entity();
-        self.viewport.get_world_mut().attach_component(player, Transform::with_position(Vec3::new(0.0, 1.0, 0.0)));
-        self.viewport.get_world_mut().attach_component(player, MeshComponent::with_mesh("cube".to_string()));
-        self.viewport.get_world_mut().attach_component(player, Name::new("Player".to_string()));
+        self.viewport
+            .get_world_mut()
+            .attach_component(player, Transform::with_position(Vec3::new(0.0, 1.0, 0.0)));
+        self.viewport
+            .get_world_mut()
+            .attach_component(player, MeshComponent::with_mesh("cube".to_string()));
+        self.viewport
+            .get_world_mut()
+            .attach_component(player, Name::new("Player".to_string()));
         self.scene_tree.add_entity(player, "Player".to_string());
 
         // Create light entity with Transform and Name
         let light = self.viewport.get_world_mut().create_entity();
-        self.viewport.get_world_mut().attach_component(light, Transform::with_position(Vec3::new(5.0, 10.0, 5.0)));
-        self.viewport.get_world_mut().attach_component(light, Name::new("MainLight".to_string()));
+        self.viewport
+            .get_world_mut()
+            .attach_component(light, Transform::with_position(Vec3::new(5.0, 10.0, 5.0)));
+        self.viewport
+            .get_world_mut()
+            .attach_component(light, Name::new("MainLight".to_string()));
         self.scene_tree.add_entity(light, "MainLight".to_string());
 
         // Create camera entity with Transform and Name
         let camera = self.viewport.get_world_mut().create_entity();
-        self.viewport.get_world_mut().attach_component(camera, Transform::with_position(Vec3::new(0.0, 5.0, 10.0)));
-        self.viewport.get_world_mut().attach_component(camera, Name::new("MainCamera".to_string()));
+        self.viewport
+            .get_world_mut()
+            .attach_component(camera, Transform::with_position(Vec3::new(0.0, 5.0, 10.0)));
+        self.viewport
+            .get_world_mut()
+            .attach_component(camera, Name::new("MainCamera".to_string()));
         self.scene_tree.add_entity(camera, "MainCamera".to_string());
     }
 
@@ -331,23 +344,28 @@ impl Editor {
             let home = std::env::var("USERPROFILE")
                 .or_else(|_| std::env::var("HOME"))
                 .map_err(|_| {
-                    io::Error::new(io::ErrorKind::NotFound, "Could not determine home directory")
+                    io::Error::new(
+                        io::ErrorKind::NotFound,
+                        "Could not determine home directory",
+                    )
                 })?;
             Ok(PathBuf::from(home).join(".gn-engine").join("config.json"))
         }
         #[cfg(not(target_os = "windows"))]
         {
-            let home = std::env::var("HOME")
-                .map_err(|_| {
-                    io::Error::new(io::ErrorKind::NotFound, "Could not determine home directory")
-                })?;
+            let home = std::env::var("HOME").map_err(|_| {
+                io::Error::new(
+                    io::ErrorKind::NotFound,
+                    "Could not determine home directory",
+                )
+            })?;
             Ok(PathBuf::from(home).join(".config/gn-engine/config.json"))
         }
     }
 
     fn save_backend_preference(backend: BackendPreference) -> io::Result<()> {
         let config_path = Self::get_config_path()?;
-        
+
         if let Some(parent) = config_path.parent() {
             fs::create_dir_all(parent)?;
         }
@@ -377,7 +395,9 @@ impl Editor {
         // Simple JSON parsing for backend value
         if content.contains(r#""backend":"vulkan"#) || content.contains(r#""backend": "vulkan"#) {
             BackendPreference::Vulkan
-        } else if content.contains(r#""backend":"opengl"#) || content.contains(r#""backend": "opengl"#) {
+        } else if content.contains(r#""backend":"opengl"#)
+            || content.contains(r#""backend": "opengl"#)
+        {
             BackendPreference::OpenGL
         } else {
             BackendPreference::Auto

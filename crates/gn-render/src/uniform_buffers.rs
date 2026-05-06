@@ -178,13 +178,22 @@ impl UniformBufferManager {
     /// Update the camera uniform buffer
     pub fn update_camera(&self, queue: &wgpu::Queue, camera: &Camera) {
         let camera_uniform = CameraUniform::from_camera(camera);
-        queue.write_buffer(&self.camera_buffer, 0, bytemuck::cast_slice(&[camera_uniform]));
+        queue.write_buffer(
+            &self.camera_buffer,
+            0,
+            bytemuck::cast_slice(&[camera_uniform]),
+        );
     }
 
     /// Update a transform uniform buffer
     ///
     /// Returns false if the index is out of bounds
-    pub fn update_transform(&self, queue: &wgpu::Queue, index: usize, transform: &Mat4<f32>) -> bool {
+    pub fn update_transform(
+        &self,
+        queue: &wgpu::Queue,
+        index: usize,
+        transform: &Mat4<f32>,
+    ) -> bool {
         if let Some(buffer) = self.transform_buffers.get(index) {
             let transform_uniform = TransformUniform::from_matrix(transform);
             queue.write_buffer(buffer, 0, bytemuck::cast_slice(&[transform_uniform]));
@@ -239,19 +248,39 @@ fn mat4_to_array(mat: &Mat4<f32>) -> [[f32; 4]; 4] {
 fn calculate_normal_matrix(model: &Mat4<f32>) -> [[f32; 3]; 3] {
     // Extract the upper-left 3x3 matrix
     let upper_3x3 = nalgebra::Matrix3::new(
-        model[(0, 0)], model[(0, 1)], model[(0, 2)],
-        model[(1, 0)], model[(1, 1)], model[(1, 2)],
-        model[(2, 0)], model[(2, 1)], model[(2, 2)],
+        model[(0, 0)],
+        model[(0, 1)],
+        model[(0, 2)],
+        model[(1, 0)],
+        model[(1, 1)],
+        model[(1, 2)],
+        model[(2, 0)],
+        model[(2, 1)],
+        model[(2, 2)],
     );
 
     // Calculate inverse transpose
-    let normal_matrix = upper_3x3.try_inverse().unwrap_or_else(|| nalgebra::Matrix3::identity());
+    let normal_matrix = upper_3x3
+        .try_inverse()
+        .unwrap_or_else(|| nalgebra::Matrix3::identity());
     let normal_matrix = normal_matrix.transpose();
 
     [
-        [normal_matrix[(0, 0)], normal_matrix[(0, 1)], normal_matrix[(0, 2)]],
-        [normal_matrix[(1, 0)], normal_matrix[(1, 1)], normal_matrix[(1, 2)]],
-        [normal_matrix[(2, 0)], normal_matrix[(2, 1)], normal_matrix[(2, 2)]],
+        [
+            normal_matrix[(0, 0)],
+            normal_matrix[(0, 1)],
+            normal_matrix[(0, 2)],
+        ],
+        [
+            normal_matrix[(1, 0)],
+            normal_matrix[(1, 1)],
+            normal_matrix[(1, 2)],
+        ],
+        [
+            normal_matrix[(2, 0)],
+            normal_matrix[(2, 1)],
+            normal_matrix[(2, 2)],
+        ],
     ]
 }
 

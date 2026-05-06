@@ -42,17 +42,38 @@ fn main() {
 
     // Create player entity
     let player = world.create_entity();
-    world.attach_component(player, Position { x: 0.0, y: 1.0, z: 0.0 });
+    world.attach_component(
+        player,
+        Position {
+            x: 0.0,
+            y: 1.0,
+            z: 0.0,
+        },
+    );
     world.attach_component(player, Name("Player".to_string()));
 
     // Create light entity
     let light = world.create_entity();
-    world.attach_component(light, Position { x: 5.0, y: 10.0, z: 5.0 });
+    world.attach_component(
+        light,
+        Position {
+            x: 5.0,
+            y: 10.0,
+            z: 5.0,
+        },
+    );
     world.attach_component(light, Name("MainLight".to_string()));
 
     // Create camera entity
     let camera = world.create_entity();
-    world.attach_component(camera, Position { x: 0.0, y: 5.0, z: 10.0 });
+    world.attach_component(
+        camera,
+        Position {
+            x: 0.0,
+            y: 5.0,
+            z: 10.0,
+        },
+    );
     world.attach_component(camera, Name("MainCamera".to_string()));
 
     println!("Created example scene with {} entities", 3);

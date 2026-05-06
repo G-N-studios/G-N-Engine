@@ -1,17 +1,17 @@
 //! Core rendering system orchestration
-//! 
+//!
 //! Provides high-level abstractions for managing render pipelines, command buffers,
 //! and frame submission. The RenderSystem bridges the viewport layer with low-level wgpu details.
 
-use std::collections::HashMap;
-use std::sync::Arc;
-use wgpu::*;
 use crate::graphics::{GraphicsContext, Shader};
 use crate::mesh::Mesh;
 use crate::render_queue::MeshHandle;
+use std::collections::HashMap;
+use std::sync::Arc;
+use wgpu::*;
 
 /// Main rendering system orchestrator
-/// 
+///
 /// Manages render pipelines, bind group layouts, and frame acquisition/submission.
 /// Provides abstraction layer between viewport code and wgpu implementation details.
 pub struct RenderSystem {
@@ -22,31 +22,32 @@ pub struct RenderSystem {
 
 impl RenderSystem {
     /// Create a new RenderSystem with the given graphics context
-    /// 
+    ///
     /// # Arguments
     /// * `graphics_context` - The underlying graphics context for device/queue access
-    /// 
+    ///
     /// # Returns
     /// A new RenderSystem instance with an empty pipeline cache
     pub fn new(graphics_context: Arc<GraphicsContext>) -> Self {
-        let bind_group_layout = graphics_context.device.create_bind_group_layout(
-            &BindGroupLayoutDescriptor {
-                label: Some("RenderSystem Bind Group Layout"),
-                entries: &[
-                    // Camera buffer binding
-                    BindGroupLayoutEntry {
-                        binding: 0,
-                        visibility: ShaderStages::VERTEX_FRAGMENT,
-                        ty: BindingType::Buffer {
-                            ty: BufferBindingType::Uniform,
-                            has_dynamic_offset: false,
-                            min_binding_size: None,
+        let bind_group_layout =
+            graphics_context
+                .device
+                .create_bind_group_layout(&BindGroupLayoutDescriptor {
+                    label: Some("RenderSystem Bind Group Layout"),
+                    entries: &[
+                        // Camera buffer binding
+                        BindGroupLayoutEntry {
+                            binding: 0,
+                            visibility: ShaderStages::VERTEX_FRAGMENT,
+                            ty: BindingType::Buffer {
+                                ty: BufferBindingType::Uniform,
+                                has_dynamic_offset: false,
+                                min_binding_size: None,
+                            },
+                            count: None,
                         },
-                        count: None,
-                    },
-                ],
-            },
-        );
+                    ],
+                });
 
         RenderSystem {
             graphics_context,
@@ -56,72 +57,73 @@ impl RenderSystem {
     }
 
     /// Create and store a new render pipeline
-    /// 
+    ///
     /// # Arguments
     /// * `name` - Unique identifier for this pipeline
     /// * `shader` - The shader module to use in the pipeline
-    /// 
+    ///
     /// # Returns
     /// Ok(()) if successful, Err with description if pipeline creation fails
     pub fn create_pipeline(&mut self, name: &str, shader: &Shader) -> Result<(), String> {
-        let pipeline_layout = self.graphics_context.device.create_pipeline_layout(
-            &PipelineLayoutDescriptor {
-                label: Some(&format!("Pipeline Layout: {}", name)),
-                bind_group_layouts: &[&self.bind_group_layout],
-                push_constant_ranges: &[],
-            },
-        );
+        let pipeline_layout =
+            self.graphics_context
+                .device
+                .create_pipeline_layout(&PipelineLayoutDescriptor {
+                    label: Some(&format!("Pipeline Layout: {}", name)),
+                    bind_group_layouts: &[&self.bind_group_layout],
+                    push_constant_ranges: &[],
+                });
 
         let surface_format = self.graphics_context.config.format;
 
-        let pipeline = self.graphics_context.device.create_render_pipeline(
-            &wgpu::RenderPipelineDescriptor {
-                label: Some(name),
-                layout: Some(&pipeline_layout),
-                vertex: VertexState {
-                    module: &shader.module,
-                    entry_point: "vs_main",
-                    buffers: &[],
-                },
-                primitive: PrimitiveState {
-                    topology: PrimitiveTopology::TriangleList,
-                    strip_index_format: None,
-                    front_face: FrontFace::Ccw,
-                    cull_mode: Some(Face::Back),
-                    unclipped_depth: false,
-                    polygon_mode: PolygonMode::Fill,
-                    conservative: false,
-                },
-                depth_stencil: None,
-                multisample: MultisampleState {
-                    count: 1,
-                    mask: !0,
-                    alpha_to_coverage_enabled: false,
-                },
-                fragment: Some(FragmentState {
-                    module: &shader.module,
-                    entry_point: "fs_main",
-                    targets: &[Some(ColorTargetState {
-                        format: surface_format,
-                        blend: Some(BlendState::REPLACE),
-                        write_mask: ColorWrites::ALL,
-                    })],
-                }),
-                multiview: None,
-            },
-        );
+        let pipeline =
+            self.graphics_context
+                .device
+                .create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+                    label: Some(name),
+                    layout: Some(&pipeline_layout),
+                    vertex: VertexState {
+                        module: &shader.module,
+                        entry_point: "vs_main",
+                        buffers: &[],
+                    },
+                    primitive: PrimitiveState {
+                        topology: PrimitiveTopology::TriangleList,
+                        strip_index_format: None,
+                        front_face: FrontFace::Ccw,
+                        cull_mode: Some(Face::Back),
+                        unclipped_depth: false,
+                        polygon_mode: PolygonMode::Fill,
+                        conservative: false,
+                    },
+                    depth_stencil: None,
+                    multisample: MultisampleState {
+                        count: 1,
+                        mask: !0,
+                        alpha_to_coverage_enabled: false,
+                    },
+                    fragment: Some(FragmentState {
+                        module: &shader.module,
+                        entry_point: "fs_main",
+                        targets: &[Some(ColorTargetState {
+                            format: surface_format,
+                            blend: Some(BlendState::REPLACE),
+                            write_mask: ColorWrites::ALL,
+                        })],
+                    }),
+                    multiview: None,
+                });
 
-        self.render_pipelines
-            .insert(name.to_string(), pipeline);
+        self.render_pipelines.insert(name.to_string(), pipeline);
 
         Ok(())
     }
 
     /// Retrieve a stored render pipeline by name
-    /// 
+    ///
     /// # Arguments
     /// * `name` - The identifier used when creating the pipeline
-    /// 
+    ///
     /// # Returns
     /// Some reference to the pipeline if it exists, None otherwise
     pub fn get_pipeline(&self, name: &str) -> Option<&wgpu::RenderPipeline> {
@@ -129,9 +131,9 @@ impl RenderSystem {
     }
 
     /// Acquire the current surface texture for rendering
-    /// 
+    ///
     /// Must be called at the beginning of each frame to get a texture to render to.
-    /// 
+    ///
     /// # Returns
     /// Ok(SurfaceTexture) if acquisition succeeds, Err with wgpu error details
     pub fn begin_frame(&self) -> Result<wgpu::SurfaceTexture, wgpu::SurfaceError> {
@@ -139,12 +141,14 @@ impl RenderSystem {
     }
 
     /// Submit a command buffer to the rendering queue
-    /// 
+    ///
     /// # Arguments
     /// * `encoder` - The command encoder with queued render commands
     pub fn submit_commands(&self, encoder: wgpu::CommandEncoder) {
         let command_buffer = encoder.finish();
-        self.graphics_context.queue.submit(std::iter::once(command_buffer));
+        self.graphics_context
+            .queue
+            .submit(std::iter::once(command_buffer));
     }
 
     /// Get a reference to the underlying graphics context
@@ -350,9 +354,7 @@ impl RenderPass {
                 // Get the mesh from storage
                 let mesh = mesh_storage
                     .get_mesh(command.mesh_handle)
-                    .ok_or_else(|| {
-                        format!("Mesh not found for handle: {}", command.mesh_handle)
-                    })?;
+                    .ok_or_else(|| format!("Mesh not found for handle: {}", command.mesh_handle))?;
 
                 // Validate material exists
                 let _material = material_manager
@@ -365,17 +367,13 @@ impl RenderPass {
                 let vertex_buffer = mesh
                     .vertex_buffer
                     .as_ref()
-                    .ok_or_else(|| {
-                        format!("Vertex buffer not uploaded for mesh: {}", mesh.name)
-                    })?;
+                    .ok_or_else(|| format!("Vertex buffer not uploaded for mesh: {}", mesh.name))?;
 
                 // Get index buffer
                 let index_buffer = mesh
                     .index_buffer
                     .as_ref()
-                    .ok_or_else(|| {
-                        format!("Index buffer not uploaded for mesh: {}", mesh.name)
-                    })?;
+                    .ok_or_else(|| format!("Index buffer not uploaded for mesh: {}", mesh.name))?;
 
                 // Set vertex buffer (slot 0)
                 rpass.set_vertex_buffer(0, vertex_buffer.slice(..));
@@ -456,24 +454,18 @@ impl RenderPass {
                 // Get the mesh
                 let mesh = mesh_storage
                     .get_mesh(command.mesh_handle)
-                    .ok_or_else(|| {
-                        format!("Mesh not found for handle: {}", command.mesh_handle)
-                    })?;
+                    .ok_or_else(|| format!("Mesh not found for handle: {}", command.mesh_handle))?;
 
                 // Get buffers
                 let vertex_buffer = mesh
                     .vertex_buffer
                     .as_ref()
-                    .ok_or_else(|| {
-                        format!("Vertex buffer not uploaded for mesh: {}", mesh.name)
-                    })?;
+                    .ok_or_else(|| format!("Vertex buffer not uploaded for mesh: {}", mesh.name))?;
 
                 let index_buffer = mesh
                     .index_buffer
                     .as_ref()
-                    .ok_or_else(|| {
-                        format!("Index buffer not uploaded for mesh: {}", mesh.name)
-                    })?;
+                    .ok_or_else(|| format!("Index buffer not uploaded for mesh: {}", mesh.name))?;
 
                 // Set buffers
                 rpass.set_vertex_buffer(0, vertex_buffer.slice(..));
@@ -560,7 +552,7 @@ mod tests {
         let mut storage = MeshStorage::new();
         let mesh = Mesh::cube();
         let handle = storage.add_mesh(mesh);
-        
+
         let retrieved = storage.get_mesh(handle);
         assert!(retrieved.is_some());
         assert_eq!(retrieved.unwrap().name, "Cube");
@@ -571,7 +563,7 @@ mod tests {
         let mut storage = MeshStorage::new();
         let mesh = Mesh::cube();
         let handle = storage.add_mesh(mesh);
-        
+
         let removed = storage.remove_mesh(handle);
         assert!(removed.is_some());
         assert_eq!(storage.len(), 0);
@@ -583,7 +575,7 @@ mod tests {
         storage.add_mesh(Mesh::cube());
         storage.add_mesh(Mesh::cube());
         assert_eq!(storage.len(), 2);
-        
+
         storage.clear();
         assert_eq!(storage.len(), 0);
         assert!(storage.is_empty());
@@ -594,7 +586,7 @@ mod tests {
         let mut storage = MeshStorage::new();
         storage.add_mesh(Mesh::cube());
         storage.add_mesh(Mesh::cube());
-        
+
         let count = storage.iter().count();
         assert_eq!(count, 2);
     }
@@ -605,7 +597,7 @@ mod tests {
         let h1 = storage.add_mesh(Mesh::cube());
         let h2 = storage.add_mesh(Mesh::cube());
         let h3 = storage.add_mesh(Mesh::cube());
-        
+
         assert_eq!(h1, 0);
         assert_eq!(h2, 1);
         assert_eq!(h3, 2);

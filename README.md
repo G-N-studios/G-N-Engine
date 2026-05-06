@@ -18,7 +18,7 @@ This will start the editor with an interactive launcher where you can:
 
 The editor interface includes:
 - **Scene Tree**: View and manage entities in your scene
-- **Viewport**: 3D view of your scene (placeholder rendering)
+- **Viewport**: Embedded live scene preview that visualizes entities from the editor ECS world
 - **Properties Panel**: Inspect and edit entity properties
 - **Asset Browser**: Browse and manage game assets
 

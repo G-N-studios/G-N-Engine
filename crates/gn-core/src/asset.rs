@@ -1,10 +1,10 @@
 //! Asset management system
-//! 
+//!
 //! Handles loading, caching, and managing game assets (models, textures, etc.)
 
+use crate::Result;
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
-use crate::Result;
 
 /// Unique identifier for an asset
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -64,7 +64,8 @@ impl AssetManager {
             .unwrap_or("unknown")
             .to_string();
 
-        let loader = self.loaders
+        let loader = self
+            .loaders
             .get(&extension)
             .ok_or(crate::EngineError::AssetNotFound)?;
 
@@ -126,7 +127,7 @@ mod tests {
         let mut manager = AssetManager::new(PathBuf::from("assets"));
         let id = AssetId::new("test/asset");
         let asset = Box::new(MockAsset { id: id.clone() });
-        
+
         manager.assets.insert(id.clone(), asset);
         assert!(manager.has_asset(&id));
     }

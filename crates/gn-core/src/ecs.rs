@@ -1,15 +1,15 @@
 //! Entity Component System (ECS)
-//! 
+//!
 //! Simple but effective ECS implementation supporting:
 //! - Entity creation/destruction
 //! - Component attachment/detachment
 //! - System execution
 //! - Queries for entity iteration
 
+use serde::{Deserialize, Serialize};
 use std::any::{Any, TypeId};
 use std::collections::HashMap;
 use uuid::Uuid;
-use serde::{Serialize, Deserialize};
 
 /// Unique identifier for an entity
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -105,7 +105,8 @@ impl World {
     /// Attach a component to an entity
     pub fn attach_component<C: Component + 'static>(&mut self, entity: Entity, component: C) {
         let type_id = TypeId::of::<C>();
-        let storage = self.storages
+        let storage = self
+            .storages
             .entry(type_id)
             .or_insert_with(ComponentStorage::new);
         storage.insert(entity, Box::new(component));
@@ -147,9 +148,9 @@ impl World {
             .and_then(|component| {
                 let any = component.as_ref().as_any();
                 unsafe {
-                    (any as *const dyn Any as *const C).as_ref().map(|c| {
-                        std::ptr::read(c)
-                    })
+                    (any as *const dyn Any as *const C)
+                        .as_ref()
+                        .map(|c| std::ptr::read(c))
                 }
             })
     }
@@ -229,10 +230,10 @@ mod tests {
     fn test_component_attach_and_get() {
         let mut world = World::new();
         let entity = world.create_entity();
-        
+
         world.attach_component(entity, Position(1.0, 2.0, 3.0));
         let pos = world.get_component::<Position>(&entity);
-        
+
         assert!(pos.is_some());
         assert_eq!(pos.unwrap().0, 1.0);
     }
@@ -241,7 +242,7 @@ mod tests {
     fn test_has_component() {
         let mut world = World::new();
         let entity = world.create_entity();
-        
+
         assert!(!world.has_component::<Position>(&entity));
         world.attach_component(entity, Position(0.0, 0.0, 0.0));
         assert!(world.has_component::<Position>(&entity));
@@ -251,10 +252,10 @@ mod tests {
     fn test_multiple_components() {
         let mut world = World::new();
         let entity = world.create_entity();
-        
+
         world.attach_component(entity, Position(1.0, 2.0, 3.0));
         world.attach_component(entity, Velocity(0.1, 0.2, 0.3));
-        
+
         assert!(world.has_component::<Position>(&entity));
         assert!(world.has_component::<Velocity>(&entity));
     }
@@ -265,7 +266,7 @@ mod tests {
         let e1 = world.create_entity();
         let e2 = world.create_entity();
         let e3 = world.create_entity();
-        
+
         let entities = world.get_entities();
         assert_eq!(entities.len(), 3);
         assert!(entities.contains(&e1));

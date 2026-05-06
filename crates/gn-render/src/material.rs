@@ -308,8 +308,11 @@ mod tests {
     #[test]
     fn test_get_mut_material() {
         let mut manager = MaterialManager::new();
-        let handle = manager.create_material("mutable", Material::new([1.0, 0.0, 0.0], 0.2, [1.0, 1.0, 1.0], 32.0));
-        
+        let handle = manager.create_material(
+            "mutable",
+            Material::new([1.0, 0.0, 0.0], 0.2, [1.0, 1.0, 1.0], 32.0),
+        );
+
         if let Some(mat) = manager.get_mut(handle) {
             mat.ambient = 0.5;
         }

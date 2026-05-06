@@ -1,21 +1,21 @@
 //! G&N Engine Core
-//! 
+//!
 //! Core components for the Grit and Nails Engine including:
 //! - Entity Component System (ECS)
 //! - Math utilities
 //! - Asset management
 //! - Serialization support
 
+pub mod asset;
+pub mod component_display;
+pub mod components;
 pub mod ecs;
 pub mod math;
-pub mod asset;
-pub mod components;
-pub mod component_display;
 
-pub use ecs::{World, Entity, Component};
-pub use math::{Vec3, Mat4, Quat};
-pub use components::{Transform, MeshComponent, Name};
 pub use component_display::ComponentDisplay;
+pub use components::{MeshComponent, Name, Transform};
+pub use ecs::{Component, Entity, World};
+pub use math::{Mat4, Quat, Vec3};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum EngineError {

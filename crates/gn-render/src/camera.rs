@@ -1,6 +1,6 @@
 //! Camera system for 3D rendering
 
-use gn_core::math::{Vec3, Mat4};
+use gn_core::math::{Mat4, Vec3};
 use std::f32::consts::PI;
 
 /// 3D camera in world space
@@ -37,12 +37,7 @@ impl Camera {
     }
 
     /// Create an orthographic camera
-    pub fn orthographic(
-        position: Vec3<f32>,
-        target: Vec3<f32>,
-        width: f32,
-        height: f32,
-    ) -> Self {
+    pub fn orthographic(position: Vec3<f32>, target: Vec3<f32>, width: f32, height: f32) -> Self {
         let direction = (target - position).normalize();
         let up = Vec3::new(0.0, 1.0, 0.0);
 
@@ -67,14 +62,14 @@ impl Camera {
     pub fn projection_matrix(&self) -> Mat4<f32> {
         let fov_rad = self.fov * PI / 180.0;
         let f = 1.0 / (fov_rad / 2.0).tan();
-        
+
         let mut proj = Mat4::zeros();
         proj[(0, 0)] = f / self.aspect_ratio;
         proj[(1, 1)] = f;
         proj[(2, 2)] = (self.far + self.near) / (self.near - self.far);
         proj[(2, 3)] = -1.0;
         proj[(3, 2)] = (2.0 * self.far * self.near) / (self.near - self.far);
-        
+
         proj
     }
 

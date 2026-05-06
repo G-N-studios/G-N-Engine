@@ -1,12 +1,12 @@
 //! Render queue system for collecting and managing drawable objects from the ECS
-//! 
+//!
 //! The render queue collects all drawable entities from the ECS world,
 //! creates render commands for each one, and sorts them for efficient rendering.
 
-use gn_core::World;
-use gn_core::components::{Transform, MeshComponent};
-use gn_core::math::Mat4;
 use crate::Camera;
+use gn_core::components::{MeshComponent, Transform};
+use gn_core::math::Mat4;
+use gn_core::World;
 
 /// Handle type for identifying meshes
 pub type MeshHandle = u32;
@@ -336,10 +336,7 @@ mod tests {
             world.attach_component(entity, Transform::new());
             world.attach_component(
                 entity,
-                MeshComponent::new(
-                    format!("mesh_{}", i),
-                    format!("material_{}", i),
-                ),
+                MeshComponent::new(format!("mesh_{}", i), format!("material_{}", i)),
             );
         }
 

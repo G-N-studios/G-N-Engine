@@ -1,5 +1,5 @@
 //! Texture management system for loading and caching GPU textures
-//! 
+//!
 //! Handles loading PNG/JPG images, creating GPU textures, and managing texture lifecycle.
 //! Provides caching to avoid duplicate loads.
 

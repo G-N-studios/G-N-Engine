@@ -1,7 +1,7 @@
 //! Mesh and material system for 3D rendering
 
-use wgpu::*;
 use std::mem;
+use wgpu::*;
 
 /// Vertex data for 3D meshes
 #[repr(C)]
@@ -14,7 +14,11 @@ pub struct Vertex {
 
 impl Vertex {
     pub const fn new(position: [f32; 3], normal: [f32; 3], uv: [f32; 2]) -> Self {
-        Vertex { position, normal, uv }
+        Vertex {
+            position,
+            normal,
+            uv,
+        }
     }
 
     /// Get the buffer layout for this vertex type
@@ -68,17 +72,21 @@ impl Mesh {
     pub fn upload(&mut self, device: &Device) {
         use wgpu::util::DeviceExt;
 
-        self.vertex_buffer = Some(device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some(&format!("{} Vertex Buffer", self.name)),
-            contents: bytemuck::cast_slice(&self.vertices),
-            usage: BufferUsages::VERTEX | BufferUsages::COPY_DST,
-        }));
+        self.vertex_buffer = Some(
+            device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                label: Some(&format!("{} Vertex Buffer", self.name)),
+                contents: bytemuck::cast_slice(&self.vertices),
+                usage: BufferUsages::VERTEX | BufferUsages::COPY_DST,
+            }),
+        );
 
-        self.index_buffer = Some(device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some(&format!("{} Index Buffer", self.name)),
-            contents: bytemuck::cast_slice(&self.indices),
-            usage: BufferUsages::INDEX | BufferUsages::COPY_DST,
-        }));
+        self.index_buffer = Some(
+            device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                label: Some(&format!("{} Index Buffer", self.name)),
+                contents: bytemuck::cast_slice(&self.indices),
+                usage: BufferUsages::INDEX | BufferUsages::COPY_DST,
+            }),
+        );
     }
 
     /// Create a simple cube mesh
@@ -178,12 +186,7 @@ mod tests {
 
     #[test]
     fn test_material_pbr() {
-        let material = Material::with_pbr(
-            "Metal".to_string(),
-            [0.5, 0.5, 0.5, 1.0],
-            0.2,
-            0.8,
-        );
+        let material = Material::with_pbr("Metal".to_string(), [0.5, 0.5, 0.5, 1.0], 0.2, 0.8);
         assert_eq!(material.roughness, 0.2);
         assert_eq!(material.metallic, 0.8);
     }

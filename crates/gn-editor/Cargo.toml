@@ -9,11 +9,12 @@ name = "gn-editor"
 path = "src/main.rs"
 
 [dependencies]
-iced = "0.12"
+iced = { version = "0.12", features = ["canvas"] }
 gn-core = { path = "../gn-core" }
 gn-render = { path = "../gn-render" }
 gn-scripting = { path = "../gn-scripting" }
 log = "0.4"
 env_logger = "0.11"
+pollster = "0.3"
 
 [dev-dependencies]

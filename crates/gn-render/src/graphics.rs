@@ -1,10 +1,10 @@
 //! Graphics abstraction layer and rendering engine
-//! 
+//!
 //! Core graphics functionality using wgpu for cross-platform rendering
 
+use std::sync::Arc;
 use wgpu::*;
 use winit::window::Window;
-use std::sync::Arc;
 
 /// Backend preference for graphics rendering
 #[derive(Debug, Clone, Copy)]
@@ -44,7 +44,8 @@ impl GraphicsContext {
             ..Default::default()
         });
 
-        let surface = instance.create_surface(window.clone())
+        let surface = instance
+            .create_surface(window.clone())
             .map_err(|e| format!("Failed to create surface: {:?}", e))?;
 
         let adapter = instance
@@ -59,11 +60,14 @@ impl GraphicsContext {
         let backend_info = format!("{:?}", adapter.get_info().backend);
 
         let (device, queue) = adapter
-            .request_device(&DeviceDescriptor {
-                label: Some("G&N Engine Device"),
-                required_features: Features::empty(),
-                required_limits: Limits::default(),
-            }, None)
+            .request_device(
+                &DeviceDescriptor {
+                    label: Some("G&N Engine Device"),
+                    required_features: Features::empty(),
+                    required_limits: Limits::default(),
+                },
+                None,
+            )
             .await
             .map_err(|e| format!("Failed to request device: {:?}", e))?;
 
@@ -97,9 +101,10 @@ impl GraphicsContext {
 
     /// Create a render pass encoder
     pub fn create_command_encoder(&self) -> CommandEncoder {
-        self.device.create_command_encoder(&CommandEncoderDescriptor {
-            label: Some("Render Pass"),
-        })
+        self.device
+            .create_command_encoder(&CommandEncoderDescriptor {
+                label: Some("Render Pass"),
+            })
     }
 
     /// Get information about the active backend
@@ -247,4 +252,3 @@ mod tests {
         assert!(!wgsl_source.is_empty());
     }
 }
-

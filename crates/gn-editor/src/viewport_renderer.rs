@@ -5,7 +5,9 @@ use gn_core::math::Vec3;
 use gn_render::camera::Camera;
 use gn_render::graphics::{BackendPreference, GraphicsContext, Shader};
 use gn_render::lighting::LightingConfig;
-use gn_render::{RenderSystem, RenderQueue, UniformBufferManager, MaterialManager, MeshStorage, RenderPass, Mesh};
+use gn_render::{
+    MaterialManager, Mesh, MeshStorage, RenderPass, RenderQueue, RenderSystem, UniformBufferManager,
+};
 use std::sync::Arc;
 
 /// Viewport renderer with actual wgpu rendering integration
@@ -25,21 +27,21 @@ impl ViewportRenderer {
     /// Create a new viewport renderer with the specified backend preference
     pub fn new(backend: BackendPreference) -> Self {
         let world = World::new();
-        
+
         let camera = Camera::perspective(
             Vec3::new(0.0, 5.0, 10.0),
             Vec3::new(0.0, 0.0, 0.0),
             45.0,
-            16.0 / 9.0
+            16.0 / 9.0,
         );
-        
+
         let mut lighting = LightingConfig::new();
         lighting.add_light(gn_render::lighting::Light::directional(
             Vec3::new(-1.0, -1.0, -1.0).normalize(),
             [1.0, 1.0, 1.0],
-            1.0
+            1.0,
         ));
-        
+
         Self {
             world,
             camera,
@@ -58,7 +60,7 @@ impl ViewportRenderer {
     pub fn init_rendering(&mut self, graphics_context: Arc<GraphicsContext>) -> Result<(), String> {
         // Create RenderSystem
         let mut render_system = RenderSystem::new(graphics_context.clone());
-        
+
         // Load and create the basic shader
         // For Phase 1, we embed the shader source directly
         let shader_src = r#"
@@ -177,20 +179,20 @@ fn fs_main(input: VertexOutput) -> @location(0) vec4<f32> {
 }
 "#;
         let shader = Shader::from_wgsl(&graphics_context.device, "basic", shader_src);
-        
+
         // Create the basic render pipeline
         render_system.create_pipeline("basic", &shader)?;
-        
+
         self.render_system = Some(Arc::new(render_system));
-        
+
         // Create uniform buffer manager
         self.uniform_buffers = Some(UniformBufferManager::new(&graphics_context.device));
-        
+
         // Create a default cube mesh and add to storage
         let mut cube = Mesh::cube();
         cube.upload(&graphics_context.device);
         let _cube_handle = self.mesh_storage.add_mesh(cube);
-        
+
         Ok(())
     }
 
@@ -198,33 +200,40 @@ fn fs_main(input: VertexOutput) -> @location(0) vec4<f32> {
     pub fn render(&mut self, graphics_context: Arc<GraphicsContext>) -> Result<String, String> {
         // Ensure rendering is initialized
         if self.render_system.is_none() {
-            return Err("Rendering system not initialized. Call init_rendering() first.".to_string());
+            return Err(
+                "Rendering system not initialized. Call init_rendering() first.".to_string(),
+            );
         }
-        
+
         // Collect drawable objects from ECS
-        self.render_queue.collect_from_world(&self.world, &self.camera);
-        
+        self.render_queue
+            .collect_from_world(&self.world, &self.camera);
+
         // Update uniforms each frame
         if let Some(ref uniform_buffers) = self.uniform_buffers {
             uniform_buffers.update_camera(&graphics_context.queue, &self.camera);
         }
-        
+
         // Acquire surface texture
-        let surface_texture = graphics_context.get_current_texture()
+        let surface_texture = graphics_context
+            .get_current_texture()
             .map_err(|e| format!("Failed to get surface texture: {:?}", e))?;
-        
+
         // Create command encoder
         let mut encoder = graphics_context.create_command_encoder();
-        
+
         // Get render system and execute rendering
-        let render_system = self.render_system.as_ref()
+        let render_system = self
+            .render_system
+            .as_ref()
             .ok_or("Render system not available")?;
-        
-        let pipeline = render_system.get_pipeline("basic")
+
+        let pipeline = render_system
+            .get_pipeline("basic")
             .ok_or("Basic render pipeline not found")?;
-        
+
         let render_pass = RenderPass::with_default_clear();
-        
+
         // Execute the render pass
         if let Some(ref uniform_buffers) = self.uniform_buffers {
             render_pass.execute(
@@ -238,13 +247,15 @@ fn fs_main(input: VertexOutput) -> @location(0) vec4<f32> {
                 &self.mesh_storage,
             )?;
         }
-        
+
         // Submit commands
-        graphics_context.queue.submit(std::iter::once(encoder.finish()));
-        
+        graphics_context
+            .queue
+            .submit(std::iter::once(encoder.finish()));
+
         // Present frame
         surface_texture.present();
-        
+
         Ok(format!(
             "Rendered {} entities with {} lights",
             self.render_queue.len(),
@@ -306,7 +317,7 @@ impl Default for ViewportRenderer {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use gn_core::{Transform, MeshComponent};
+    use gn_core::{MeshComponent, Transform};
 
     #[test]
     fn test_viewport_renderer_creation() {
@@ -319,10 +330,14 @@ mod tests {
     fn test_viewport_add_entity() {
         let mut renderer = ViewportRenderer::new(BackendPreference::Auto);
         let entity = renderer.world_mut().create_entity();
-        
-        renderer.world_mut().attach_component(entity, Transform::new());
-        renderer.world_mut().attach_component(entity, MeshComponent::default());
-        
+
+        renderer
+            .world_mut()
+            .attach_component(entity, Transform::new());
+        renderer
+            .world_mut()
+            .attach_component(entity, MeshComponent::default());
+
         assert_eq!(renderer.world().get_entities().len(), 1);
     }
 
@@ -337,7 +352,7 @@ mod tests {
     fn test_viewport_renderer_camera_position() {
         let renderer = ViewportRenderer::new(BackendPreference::Auto);
         let camera = renderer.camera();
-        
+
         assert_eq!(camera.position.x, 0.0);
         assert_eq!(camera.position.y, 5.0);
         assert_eq!(camera.position.z, 10.0);
@@ -349,4 +364,3 @@ mod tests {
         assert!(renderer.lighting().light_count() > 0);
     }
 }
-

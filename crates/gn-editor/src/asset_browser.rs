@@ -92,18 +92,14 @@ impl AssetBrowser {
     }
 
     pub fn view(&self) -> Element<Message> {
-        let asset_buttons: Vec<Element<Message>> = self.assets
+        let asset_buttons: Vec<Element<Message>> = self
+            .assets
             .iter()
             .map(|asset| {
-                let btn = button(
-                    row![
-                        text(asset.asset_type.icon()),
-                        text(&asset.name)
-                    ]
-                    .spacing(10)
-                )
-                .on_press(Message::AssetSelected(asset.name.clone()))
-                .width(iced::Length::Fill);
+                let btn =
+                    button(row![text(asset.asset_type.icon()), text(&asset.name)].spacing(10))
+                        .on_press(Message::AssetSelected(asset.name.clone()))
+                        .width(iced::Length::Fill);
 
                 btn.into()
             })
@@ -112,17 +108,16 @@ impl AssetBrowser {
         let content = column![
             row![
                 text("Assets").size(18),
-                button(text("Refresh"))
-                    .on_press(Message::RefreshAssets)
+                button(text("Refresh")).on_press(Message::RefreshAssets)
             ]
             .spacing(10)
             .align_items(iced::Alignment::Center),
             if self.assets.is_empty() {
                 column![text("No assets found")]
             } else {
-                column![
-                    scrollable(Column::with_children(asset_buttons).spacing(5).padding(5)),
-                ]
+                column![scrollable(
+                    Column::with_children(asset_buttons).spacing(5).padding(5)
+                ),]
             }
         ]
         .spacing(10);
@@ -131,9 +126,9 @@ impl AssetBrowser {
     }
 
     pub fn selected_asset(&self) -> Option<&Asset> {
-        self.selected.as_ref().and_then(|name| {
-            self.assets.iter().find(|asset| &asset.name == name)
-        })
+        self.selected
+            .as_ref()
+            .and_then(|name| self.assets.iter().find(|asset| &asset.name == name))
     }
 
     pub fn asset_count(&self) -> usize {

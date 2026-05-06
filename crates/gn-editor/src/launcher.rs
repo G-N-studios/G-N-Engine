@@ -138,7 +138,7 @@ impl Launcher {
                 text("Create a new project").size(12),
             ]
             .align_items(Alignment::Center)
-            .padding(20)
+            .padding(20),
         )
         .on_press(Message::NewProject)
         .padding(20)
@@ -150,7 +150,7 @@ impl Launcher {
                 text("Open an existing project").size(12),
             ]
             .align_items(Alignment::Center)
-            .padding(20)
+            .padding(20),
         )
         .on_press(Message::OpenProject)
         .padding(20)
@@ -162,20 +162,16 @@ impl Launcher {
                 text("Try a demo scene").size(12),
             ]
             .align_items(Alignment::Center)
-            .padding(20)
+            .padding(20),
         )
         .on_press(Message::RunDemo)
         .padding(20)
         .width(Length::Fill);
 
-        let buttons = column![
-            new_project_btn,
-            open_project_btn,
-            demo_btn
-        ]
-        .spacing(20)
-        .padding(40)
-        .width(Length::Fixed(400.0));
+        let buttons = column![new_project_btn, open_project_btn, demo_btn]
+            .spacing(20)
+            .padding(40)
+            .width(Length::Fixed(400.0));
 
         let backend_options = vec![
             GraphicsBackend::Vulkan,
@@ -224,7 +220,7 @@ impl Launcher {
                 text(DemoType::RotatingCube.description()).size(12),
             ]
             .align_items(Alignment::Center)
-            .padding(20)
+            .padding(20),
         )
         .on_press(Message::DemoSelected(DemoType::RotatingCube))
         .padding(20)
@@ -236,32 +232,23 @@ impl Launcher {
                 text(DemoType::EditorDemo.description()).size(12),
             ]
             .align_items(Alignment::Center)
-            .padding(20)
+            .padding(20),
         )
         .on_press(Message::DemoSelected(DemoType::EditorDemo))
         .padding(20)
         .width(Length::Fill);
 
-        let back_btn = button(text("← Back"))
-            .on_press(Message::Back)
-            .padding(10);
+        let back_btn = button(text("← Back")).on_press(Message::Back).padding(10);
 
-        let buttons = column![
-            rotating_cube,
-            editor_demo
-        ]
-        .spacing(20)
-        .padding(40)
-        .width(Length::Fixed(400.0));
+        let buttons = column![rotating_cube, editor_demo]
+            .spacing(20)
+            .padding(40)
+            .width(Length::Fixed(400.0));
 
-        let content = column![
-            title,
-            buttons,
-            back_btn
-        ]
-        .spacing(20)
-        .padding(40)
-        .align_items(Alignment::Center);
+        let content = column![title, buttons, back_btn]
+            .spacing(20)
+            .padding(40)
+            .align_items(Alignment::Center);
 
         container(content)
             .width(Length::Fill)
@@ -273,20 +260,15 @@ impl Launcher {
 
     fn view_folder_selection(&self) -> Element<Message> {
         let title = text("Select Project Folder").size(32);
-        let instruction = text("(Folder selection UI coming soon)\nFor now, use default 'project' folder");
+        let instruction =
+            text("(Folder selection UI coming soon)\nFor now, use default 'project' folder");
 
-        let back_btn = button(text("← Back"))
-            .on_press(Message::Back)
-            .padding(10);
+        let back_btn = button(text("← Back")).on_press(Message::Back).padding(10);
 
-        let content = column![
-            title,
-            instruction,
-            back_btn
-        ]
-        .spacing(20)
-        .padding(40)
-        .align_items(Alignment::Center);
+        let content = column![title, instruction, back_btn]
+            .spacing(20)
+            .padding(40)
+            .align_items(Alignment::Center);
 
         container(content)
             .width(Length::Fill)

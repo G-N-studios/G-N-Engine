@@ -17,7 +17,7 @@ pub trait ComponentDisplay: Send + Sync {
 /// Specialized display implementations for common components
 pub mod displays {
     use super::*;
-    use crate::components::{Transform, MeshComponent, Name};
+    use crate::components::{MeshComponent, Name, Transform};
 
     impl ComponentDisplay for Transform {
         fn type_name(&self) -> &str {
@@ -66,9 +66,7 @@ pub mod displays {
         }
 
         fn display_data(&self) -> Vec<(String, String)> {
-            vec![
-                ("Name".to_string(), self.name.clone()),
-            ]
+            vec![("Name".to_string(), self.name.clone())]
         }
 
         fn as_any(&self) -> &dyn Any {

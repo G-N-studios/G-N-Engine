@@ -1,5 +1,5 @@
 //! Physically-Based Rendering (PBR) material system
-//! 
+//!
 //! Provides materials with realistic properties: albedo, roughness, metallic, and ambient occlusion.
 //! Uses Cook-Torrance BRDF for physically accurate lighting calculations.
 
@@ -9,12 +9,12 @@ use std::collections::HashMap;
 #[repr(C)]
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct PBRMaterial {
-    pub albedo: [f32; 3],           // Base color (RGB)
-    pub roughness: f32,              // 0.0 (smooth) to 1.0 (rough)
-    pub metallic: [f32; 3],          // Metallic tint color
-    pub metallic_factor: f32,        // 0.0 (dielectric) to 1.0 (full metal)
-    pub ao: f32,                     // Ambient occlusion factor
-    pub _padding: [u32; 3],          // Alignment padding
+    pub albedo: [f32; 3],     // Base color (RGB)
+    pub roughness: f32,       // 0.0 (smooth) to 1.0 (rough)
+    pub metallic: [f32; 3],   // Metallic tint color
+    pub metallic_factor: f32, // 0.0 (dielectric) to 1.0 (full metal)
+    pub ao: f32,              // Ambient occlusion factor
+    pub _padding: [u32; 3],   // Alignment padding
 }
 
 impl PBRMaterial {
@@ -103,7 +103,7 @@ impl PBRMaterialManager {
             materials: Vec::new(),
             name_map: HashMap::new(),
         };
-        
+
         // Add default material at index 0
         manager.create_material("default_white", PBRMaterial::default_white_plastic());
         manager
@@ -203,7 +203,7 @@ mod tests {
     fn test_pbr_material_presets() {
         let metal = PBRMaterial::shiny_metal();
         assert!(metal.metallic_factor > 0.5);
-        
+
         let plastic = PBRMaterial::default_white_plastic();
         assert!(plastic.metallic_factor < 0.5);
     }
@@ -226,7 +226,7 @@ mod tests {
     fn test_pbr_material_manager_lookup() {
         let mut manager = PBRMaterialManager::new();
         manager.create_material("test_material", PBRMaterial::shiny_metal());
-        
+
         let handle = manager.get_by_name("test_material");
         assert!(handle.is_some());
         assert_eq!(handle.unwrap(), 1);
@@ -236,7 +236,7 @@ mod tests {
     fn test_pbr_material_manager_get() {
         let mut manager = PBRMaterialManager::new();
         let handle = manager.create_material("test", PBRMaterial::rough_wood());
-        
+
         let material = manager.get(handle);
         assert!(material.is_some());
     }

@@ -1,23 +1,23 @@
 //! Spinning Cube Demo
 //! A minimal Vulkan example that renders a rotating cube
-//! 
+//!
 //! This demonstrates:
 //! - Vulkan backend initialization with wgpu
 //! - Mesh creation and GPU uploading
 //! - Basic render pipeline setup
 //! - Real-time animation with transform updates
 
+use gn_core::math::Vec3;
+use gn_render::camera::Camera;
+use gn_render::graphics::BackendPreference;
+use gn_render::mesh::Mesh;
+use std::f32::consts::PI;
+use std::sync::Arc;
 use winit::{
     event::{Event, WindowEvent},
     event_loop::{ControlFlow, EventLoop},
     window::WindowBuilder,
 };
-use std::sync::Arc;
-use gn_render::graphics::BackendPreference;
-use gn_render::camera::Camera;
-use gn_render::mesh::Mesh;
-use gn_core::math::Vec3;
-use std::f32::consts::PI;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -30,32 +30,32 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Create event loop
     let event_loop = EventLoop::new()?;
-    
+
     // Create window
     let window = Arc::new(
         WindowBuilder::new()
             .with_title("G&N Engine - Spinning Cube (Vulkan)")
             .with_inner_size(winit::dpi::LogicalSize::new(800.0, 600.0))
-            .build(&event_loop)?
+            .build(&event_loop)?,
     );
 
     log::info!("Window created: 800x600");
 
     // Create graphics context with Vulkan backend
-    let graphics_context = match gn_render::graphics::GraphicsContext::new(
-        window.clone(),
-        BackendPreference::Vulkan,
-    ).await {
-        Ok(ctx) => {
-            log::info!("GraphicsContext initialized successfully");
-            log::info!("Backend: {}", ctx.get_backend_info());
-            Arc::new(ctx)
-        }
-        Err(e) => {
-            log::error!("Failed to create GraphicsContext: {}", e);
-            return Err(format!("Graphics initialization failed: {}", e).into());
-        }
-    };
+    let graphics_context =
+        match gn_render::graphics::GraphicsContext::new(window.clone(), BackendPreference::Vulkan)
+            .await
+        {
+            Ok(ctx) => {
+                log::info!("GraphicsContext initialized successfully");
+                log::info!("Backend: {}", ctx.get_backend_info());
+                Arc::new(ctx)
+            }
+            Err(e) => {
+                log::error!("Failed to create GraphicsContext: {}", e);
+                return Err(format!("Graphics initialization failed: {}", e).into());
+            }
+        };
 
     // Create camera
     let camera = Camera::perspective(
@@ -65,78 +65,96 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         800.0 / 600.0,
     );
 
-    log::info!("Camera created at position: {:.1}, {:.1}, {:.1}", 
-        camera.position.x, camera.position.y, camera.position.z);
+    log::info!(
+        "Camera created at position: {:.1}, {:.1}, {:.1}",
+        camera.position.x,
+        camera.position.y,
+        camera.position.z
+    );
 
     // Create and upload cube mesh
     let mut cube = Mesh::cube();
     cube.upload(&graphics_context.device);
-    log::info!("Cube mesh created and uploaded to GPU: {} indices", cube.index_count());
+    log::info!(
+        "Cube mesh created and uploaded to GPU: {} indices",
+        cube.index_count()
+    );
 
     // Create shader
     let shader_src = include_str!("./shader.wgsl");
-    let shader = gn_render::graphics::Shader::from_wgsl(&graphics_context.device, "spinning_cube", shader_src);
+    let shader = gn_render::graphics::Shader::from_wgsl(
+        &graphics_context.device,
+        "spinning_cube",
+        shader_src,
+    );
     log::info!("Shader compiled");
 
     // Create bind group layout
-    let bind_group_layout = graphics_context.device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-        label: Some("Main Bind Group Layout"),
-        entries: &[
-            wgpu::BindGroupLayoutEntry {
-                binding: 0,
-                visibility: wgpu::ShaderStages::VERTEX | wgpu::ShaderStages::FRAGMENT,
-                ty: wgpu::BindingType::Buffer {
-                    ty: wgpu::BufferBindingType::Uniform,
-                    has_dynamic_offset: false,
-                    min_binding_size: None,
-                },
-                count: None,
-            },
-        ],
-    });
+    let bind_group_layout =
+        graphics_context
+            .device
+            .create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                label: Some("Main Bind Group Layout"),
+                entries: &[wgpu::BindGroupLayoutEntry {
+                    binding: 0,
+                    visibility: wgpu::ShaderStages::VERTEX | wgpu::ShaderStages::FRAGMENT,
+                    ty: wgpu::BindingType::Buffer {
+                        ty: wgpu::BufferBindingType::Uniform,
+                        has_dynamic_offset: false,
+                        min_binding_size: None,
+                    },
+                    count: None,
+                }],
+            });
 
     // Create pipeline layout
-    let pipeline_layout = graphics_context.device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-        label: Some("Render Pipeline Layout"),
-        bind_group_layouts: &[&bind_group_layout],
-        push_constant_ranges: &[],
-    });
+    let pipeline_layout =
+        graphics_context
+            .device
+            .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+                label: Some("Render Pipeline Layout"),
+                bind_group_layouts: &[&bind_group_layout],
+                push_constant_ranges: &[],
+            });
 
     // Create render pipeline
-    let render_pipeline = graphics_context.device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-        label: Some("Spinning Cube Pipeline"),
-        layout: Some(&pipeline_layout),
-        vertex: wgpu::VertexState {
-            module: &shader.module,
-            entry_point: "vs_main",
-            buffers: &[Mesh::vertex_buffer_layout()],
-        },
-        primitive: wgpu::PrimitiveState {
-            topology: wgpu::PrimitiveTopology::TriangleList,
-            strip_index_format: None,
-            front_face: wgpu::FrontFace::Ccw,
-            cull_mode: Some(wgpu::Face::Back),
-            unclipped_depth: false,
-            polygon_mode: wgpu::PolygonMode::Fill,
-            conservative: false,
-        },
-        depth_stencil: None,
-        multisample: wgpu::MultisampleState {
-            count: 1,
-            mask: !0,
-            alpha_to_coverage_enabled: false,
-        },
-        fragment: Some(wgpu::FragmentState {
-            module: &shader.module,
-            entry_point: "fs_main",
-            targets: &[Some(wgpu::ColorTargetState {
-                format: graphics_context.config.format,
-                blend: Some(wgpu::BlendState::REPLACE),
-                write_mask: wgpu::ColorWrites::ALL,
-            })],
-        }),
-        multiview: None,
-    });
+    let render_pipeline =
+        graphics_context
+            .device
+            .create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+                label: Some("Spinning Cube Pipeline"),
+                layout: Some(&pipeline_layout),
+                vertex: wgpu::VertexState {
+                    module: &shader.module,
+                    entry_point: "vs_main",
+                    buffers: &[Mesh::vertex_buffer_layout()],
+                },
+                primitive: wgpu::PrimitiveState {
+                    topology: wgpu::PrimitiveTopology::TriangleList,
+                    strip_index_format: None,
+                    front_face: wgpu::FrontFace::Ccw,
+                    cull_mode: Some(wgpu::Face::Back),
+                    unclipped_depth: false,
+                    polygon_mode: wgpu::PolygonMode::Fill,
+                    conservative: false,
+                },
+                depth_stencil: None,
+                multisample: wgpu::MultisampleState {
+                    count: 1,
+                    mask: !0,
+                    alpha_to_coverage_enabled: false,
+                },
+                fragment: Some(wgpu::FragmentState {
+                    module: &shader.module,
+                    entry_point: "fs_main",
+                    targets: &[Some(wgpu::ColorTargetState {
+                        format: graphics_context.config.format,
+                        blend: Some(wgpu::BlendState::REPLACE),
+                        write_mask: wgpu::ColorWrites::ALL,
+                    })],
+                }),
+                multiview: None,
+            });
 
     log::info!("Render pipeline created");
 
@@ -148,23 +166,25 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         model: [[f32; 4]; 4],
     }
 
-    let uniform_buffer = graphics_context.device.create_buffer(&wgpu::BufferDescriptor {
-        label: Some("Uniform Buffer"),
-        size: std::mem::size_of::<Uniforms>() as u64,
-        usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
-        mapped_at_creation: false,
-    });
+    let uniform_buffer = graphics_context
+        .device
+        .create_buffer(&wgpu::BufferDescriptor {
+            label: Some("Uniform Buffer"),
+            size: std::mem::size_of::<Uniforms>() as u64,
+            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+            mapped_at_creation: false,
+        });
 
-    let bind_group = graphics_context.device.create_bind_group(&wgpu::BindGroupDescriptor {
-        label: Some("Main Bind Group"),
-        layout: &bind_group_layout,
-        entries: &[
-            wgpu::BindGroupEntry {
+    let bind_group = graphics_context
+        .device
+        .create_bind_group(&wgpu::BindGroupDescriptor {
+            label: Some("Main Bind Group"),
+            layout: &bind_group_layout,
+            entries: &[wgpu::BindGroupEntry {
                 binding: 0,
                 resource: uniform_buffer.as_entire_binding(),
-            },
-        ],
-    });
+            }],
+        });
 
     log::info!("Buffers and bind groups created");
 
@@ -220,7 +240,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     }
                 };
 
-                let view = surface_texture.texture.create_view(&wgpu::TextureViewDescriptor::default());
+                let view = surface_texture
+                    .texture
+                    .create_view(&wgpu::TextureViewDescriptor::default());
 
                 // Create model matrix (rotation around Y axis)
                 let cos_r = rotation_y.cos();
@@ -237,7 +259,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     let view_matrix = camera.view_matrix();
                     let proj_matrix = camera.projection_matrix();
                     let combined = proj_matrix * view_matrix;
-                    
+
                     let mut result = [[0.0; 4]; 4];
                     for i in 0..4 {
                         for j in 0..4 {
@@ -248,12 +270,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 };
 
                 // Update uniforms
-                let uniforms = Uniforms {
-                    view_proj,
-                    model,
-                };
+                let uniforms = Uniforms { view_proj, model };
 
-                graphics_context.queue.write_buffer(&uniform_buffer, 0, bytemuck::cast_slice(&[uniforms]));
+                graphics_context.queue.write_buffer(
+                    &uniform_buffer,
+                    0,
+                    bytemuck::cast_slice(&[uniforms]),
+                );
 
                 // Create command encoder
                 let mut encoder = graphics_context.create_command_encoder();
@@ -281,18 +304,21 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
                     render_pass.set_pipeline(&render_pipeline);
                     render_pass.set_bind_group(0, &bind_group, &[]);
-                    
+
                     if let Some(vertex_buffer) = &cube.vertex_buffer {
                         render_pass.set_vertex_buffer(0, vertex_buffer.slice(..));
                     }
-                    
+
                     if let Some(index_buffer) = &cube.index_buffer {
-                        render_pass.set_index_buffer(index_buffer.slice(..), wgpu::IndexFormat::Uint32);
+                        render_pass
+                            .set_index_buffer(index_buffer.slice(..), wgpu::IndexFormat::Uint32);
                         render_pass.draw_indexed(0..cube.index_count(), 0, 0..1);
                     }
                 }
 
-                graphics_context.queue.submit(std::iter::once(encoder.finish()));
+                graphics_context
+                    .queue
+                    .submit(std::iter::once(encoder.finish()));
                 surface_texture.present();
 
                 // Log FPS every second

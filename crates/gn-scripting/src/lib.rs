@@ -1,5 +1,5 @@
 //! G&N Engine Scripting
-//! 
+//!
 //! Lua scripting integration for entity behavior and game logic
 
 pub mod script_engine;

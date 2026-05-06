@@ -1,8 +1,8 @@
 // Simple rotating cube example
 // Demonstrates basic ECS usage, transform updates, and mesh creation
 
-use gn_core::ecs::{World, Component};
-use gn_core::math::{Vec3, Mat4};
+use gn_core::ecs::{Component, World};
+use gn_core::math::{Mat4, Vec3};
 use gn_render::mesh::Mesh;
 use std::any::Any;
 
@@ -84,8 +84,18 @@ fn main() {
 
     // Attach components
     world.attach_component(cube, Transform::new(Vec3::new(0.0, 0.0, 0.0)));
-    world.attach_component(cube, MeshComponent { mesh: "cube".to_string() });
-    world.attach_component(cube, RotationBehavior { rotation_speed: 1.0 });
+    world.attach_component(
+        cube,
+        MeshComponent {
+            mesh: "cube".to_string(),
+        },
+    );
+    world.attach_component(
+        cube,
+        RotationBehavior {
+            rotation_speed: 1.0,
+        },
+    );
 
     println!("Attached Transform, MeshComponent, and RotationBehavior");
 
@@ -113,12 +123,19 @@ fn main() {
         }
 
         let transform = world.get_component::<Transform>(&cube).unwrap();
-        println!("  Frame {}: rotation.y = {:.3}", frame, transform.rotation.y);
+        println!(
+            "  Frame {}: rotation.y = {:.3}",
+            frame, transform.rotation.y
+        );
     }
 
     // Create a mesh
     let mesh = Mesh::cube();
-    println!("\nCreated mesh: {} with {} indices", mesh.name, mesh.index_count());
+    println!(
+        "\nCreated mesh: {} with {} indices",
+        mesh.name,
+        mesh.index_count()
+    );
 
     // Example: transform to matrix
     if let Some(transform) = world.get_component::<Transform>(&cube) {

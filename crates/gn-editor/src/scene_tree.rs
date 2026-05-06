@@ -1,8 +1,8 @@
 //! Scene tree panel - displays and manages entity hierarchy
 
+use gn_core::ecs::Entity;
 use iced::widget::{button, column, scrollable, text, Column};
 use iced::Element;
-use gn_core::ecs::Entity;
 
 #[derive(Debug, Clone)]
 pub enum Message {
@@ -34,12 +34,15 @@ impl SceneTree {
     }
 
     pub fn view(&self) -> Element<Message> {
-        let entity_buttons: Vec<Element<Message>> = self.entities
+        let entity_buttons: Vec<Element<Message>> = self
+            .entities
             .iter()
             .map(|(entity, name)| {
-                let btn = button(
-                    text(format!("{}: {}", name, format!("{:?}", entity).chars().take(8).collect::<String>()))
-                )
+                let btn = button(text(format!(
+                    "{}: {}",
+                    name,
+                    format!("{:?}", entity).chars().take(8).collect::<String>()
+                )))
                 .on_press(Message::EntitySelected(*entity))
                 .width(iced::Length::Fill);
 
@@ -50,9 +53,9 @@ impl SceneTree {
         let content = if self.entities.is_empty() {
             column![text("No entities in scene")]
         } else {
-            column![
-                scrollable(Column::with_children(entity_buttons).spacing(5).padding(5)),
-            ]
+            column![scrollable(
+                Column::with_children(entity_buttons).spacing(5).padding(5)
+            ),]
         };
 
         content.padding(10).into()
@@ -82,4 +85,3 @@ impl SceneTree {
         self.entities.len()
     }
 }
-

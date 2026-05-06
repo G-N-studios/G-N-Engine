@@ -1,8 +1,8 @@
 //! Core component types for the G&N Engine ECS system
 
-use std::any::Any;
 use crate::ecs::Component;
 use crate::math::Vec3;
+use std::any::Any;
 
 /// Transform component representing position, rotation, and scale in 3D space
 #[derive(Debug, Clone)]

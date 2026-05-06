@@ -1,14 +1,8 @@
 //! Math utilities for 3D operations
-//! 
+//!
 //! Provides vector, matrix, and quaternion types built on nalgebra
 
-pub use nalgebra::{
-    Vector3 as Vec3,
-    Matrix4 as Mat4,
-    Quaternion as Quat,
-    Unit,
-    Point3,
-};
+pub use nalgebra::{Matrix4 as Mat4, Point3, Quaternion as Quat, Unit, Vector3 as Vec3};
 
 /// Convenience type alias for a 3D point
 pub type Point = Point3<f32>;
